@@ -132,6 +132,18 @@
     </div>
   </a>
 
+  <a href="wuerfelschnitte.html" class="card">
+    <div class="card-thumb" data-thumb="wuerfel"></div>
+    <div class="card-body">
+      <h2>Würfelschnitte</h2>
+      <span class="card-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </span>
+    </div>
+  </a>
+
   <a href="3D-viewer.html" class="card">
     <div class="card-thumb" data-thumb="viewer"></div>
     <div class="card-body">
@@ -260,6 +272,75 @@ function createThumbnail(container, type) {
     const geo = new THREE.TorusKnotGeometry(0.85, 0.3, 128, 24);
     const mesh = new THREE.Mesh(geo, material);
     group.add(mesh);
+
+  } else if (type === 'wuerfel') {
+    // Zwei Halb-Würfel (diagonaler Schnitt wie Schnitt II / BD), die sich
+    // rhythmisch öffnen und schliessen.
+    // Ein halber Würfel = dreiseitiges Prisma mit drei Vertices auf einer Kante
+    // und drei auf der gegenüberliegenden. Wir bauen ihn aus BufferGeometry.
+    const S = 1.0; // Halb-Kantenlänge (Würfel -1..1)
+    // Teil 1: über der Diagonalen z > -x (ganz grob, aber wir nehmen einfach
+    // 6 konkrete Vertices, die einen schräg geschnittenen Halbwürfel bilden)
+    function makeHalfPrism(flip) {
+      const s = flip ? -1 : 1;
+      // Würfel-Ecken, getrennt durch eine schräge Ebene
+      const v = [
+        [-S, -S, -S], [ S, -S, -S], [ S,  S, -S],
+        [-S, -S,  S], [ S, -S,  S], [ S,  S,  S]
+      ];
+      if (flip) v.forEach(p => { p[0] *= -1; p[1] *= -1; p[2] *= -1; });
+      // Faces (4 Dreiecke für Quader-Boden+Dach, 4 für die Seiten + Schnittfläche)
+      const f = [
+        // Boden
+        [0,1,2],
+        // Dach
+        [3,5,4],
+        // Seite 1 (y=-S)
+        [0,3,4], [0,4,1],
+        // Seite 2 (x=S)
+        [1,4,5], [1,5,2],
+        // Schnittfläche (diagonale Fläche durch 0,2,5,3)
+        [0,2,5], [0,5,3]
+      ];
+      const positions = [];
+      for (const [a,b,c] of f) {
+        positions.push(...v[a], ...v[b], ...v[c]);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      g.computeVertexNormals();
+      return g;
+    }
+
+    const mat1 = new THREE.MeshStandardMaterial({
+      color: 0x5a9a6c, metalness: 0.15, roughness: 0.45, envMapIntensity: 1.2, side: THREE.DoubleSide
+    });
+    const mat2 = new THREE.MeshStandardMaterial({
+      color: 0xb8c5cc, metalness: 0.25, roughness: 0.4, envMapIntensity: 1.2, side: THREE.DoubleSide
+    });
+
+    const geo1 = makeHalfPrism(false);
+    const geo2 = makeHalfPrism(true);
+
+    const part1 = new THREE.Group();
+    const part2 = new THREE.Group();
+    part1.add(new THREE.Mesh(geo1, mat1));
+    part2.add(new THREE.Mesh(geo2, mat2));
+    // Edges
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+    part1.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo1, 20), edgeMat));
+    part2.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo2, 20), edgeMat));
+
+    group.add(part1);
+    group.add(part2);
+
+    // Animation-Daten: rhythmische Bewegung entlang der Trennungsrichtung
+    group.userData.part1 = part1;
+    group.userData.part2 = part2;
+    group.userData.explodeDir = new THREE.Vector3(1, 1, 1).normalize();
+
+    camera.position.set(4, 3, 5);
+    camera.lookAt(0, 0, 0);
   }
 
   scene.add(group);
@@ -272,6 +353,18 @@ function createThumbnail(container, type) {
         child.rotation.y += speed;
         child.rotation.x = Math.sin(Date.now() * 0.0005 + child.userData.phase) * 0.3;
       });
+    } else if (type === 'wuerfel') {
+      // Pulsierende Explosion: Sinus-Verlauf zwischen 0 und 1
+      const t = Date.now() * 0.0008;
+      // Sanftes Ein-/Ausatmen: Wert zwischen 0 und 1 mit Halt in beiden Extremen
+      const raw = (Math.sin(t) + 1) / 2; // 0..1
+      // Kurve verflachen an den Enden:
+      const ease = raw < 0.5 ? 2*raw*raw : 1 - Math.pow(-2*raw+2, 2)/2;
+      const dir = group.userData.explodeDir;
+      const dist = ease * 1.2;
+      group.userData.part1.position.copy(dir).multiplyScalar(dist);
+      group.userData.part2.position.copy(dir).multiplyScalar(-dist);
+      group.rotation.y += speed;
     } else {
       group.rotation.y += speed;
     }
