@@ -6,55 +6,132 @@
 <title>3D-Viewer</title>
 <style>
   :root {
-    --bg-bottom: #0a0d12;
-    --panel: rgba(255,255,255,0.05);
-    --border: rgba(255,255,255,0.1);
+    --panel: rgba(255,255,255,0.08);
+    --panel-dark: rgba(0,0,0,0.1);
+    --border: rgba(255,255,255,0.15);
+    --border-dark: rgba(0,0,0,0.15);
     --text: #f0f0f0;
+    --text-dark: #1a1a1a;
     --muted: #8a9199;
+    --muted-dark: #5a6066;
     --accent: #7dd3c0;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
     height:100%; overflow:hidden;
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg-bottom);
     color: var(--text);
+    transition: color 0.3s;
   }
+  body.light { color: var(--text-dark); }
+  body.light .panel { background: var(--panel-dark); border-color: var(--border-dark); }
+  body.light .muted-text { color: var(--muted-dark); }
+  body.light .controls span strong { color: var(--text-dark); }
+  body.light .theme-btn { color: var(--text-dark); border-color: var(--border-dark); }
+  body.light .theme-btn:hover { background: rgba(0,0,0,0.06); }
+  body.light .color-swatch { border-color: rgba(0,0,0,0.2); }
+
   #canvas-container { position: fixed; inset: 0; }
   canvas { display:block; }
 
   .panel {
-    position: fixed; top: 20px; left: 20px;
+    position: fixed;
     background: var(--panel);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 18px 22px;
-    min-width: 240px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    padding: 16px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    transition: background 0.3s, border-color 0.3s;
   }
-  .panel h1 {
+
+  #info-panel {
+    top: 20px; left: 20px;
+    min-width: 240px;
+  }
+  #info-panel h1 {
     font-size: 11px; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 10px;
   }
-  .panel .filename { font-size: 15px; font-weight: 500; margin-bottom: 6px; word-break: break-all; }
-  .panel .stats { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  #info-panel .filename { font-size: 15px; font-weight: 500; margin-bottom: 6px; word-break: break-all; }
+  #info-panel .stats { font-size: 12px; color: var(--muted); line-height: 1.7; }
+
+  #settings-panel {
+    top: 20px; right: 20px;
+    width: 260px;
+  }
+  .settings-section {
+    margin-bottom: 16px;
+  }
+  .settings-section:last-child { margin-bottom: 0; }
+  .settings-section h2 {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .theme-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .theme-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #0f1419;
+    border-color: var(--accent);
+  }
+  body.light .theme-btn.active {
+    background: var(--accent);
+    color: #0f1419;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .color-swatch {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    transition: all 0.15s;
+    position: relative;
+  }
+  .color-swatch:hover {
+    transform: scale(1.1);
+  }
+  .color-swatch.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
 
   .controls {
     position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%);
-    background: var(--panel);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 16px;
     display: flex; gap: 16px;
     font-size: 12px; color: var(--muted);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    padding: 10px 16px;
   }
   .controls span strong { color: var(--text); font-weight: 600; }
 
@@ -65,19 +142,36 @@
     pointer-events: none;
   }
   .loading.hidden { display: none; }
+
+  @media (max-width: 700px) {
+    #settings-panel { position: fixed; top: auto; right: 10px; left: 10px; bottom: 70px; width: auto; }
+    #info-panel { max-width: calc(100vw - 40px); }
+    .controls { display: none; }
+  }
 </style>
 </head>
 <body>
 
 <div id="canvas-container"></div>
 
-<div class="panel">
+<div class="panel" id="info-panel">
   <h1>3D-Modell</h1>
   <div class="filename" id="filename">Wird geladen…</div>
-  <div class="stats" id="stats">Wird geladen…</div>
+  <div class="stats muted-text" id="stats">Wird geladen…</div>
 </div>
 
-<div class="controls">
+<div class="panel" id="settings-panel">
+  <div class="settings-section">
+    <h2>Hintergrund</h2>
+    <div class="theme-grid" id="theme-grid"></div>
+  </div>
+  <div class="settings-section">
+    <h2>Modellfarbe</h2>
+    <div class="color-grid" id="color-grid"></div>
+  </div>
+</div>
+
+<div class="panel controls">
   <span><strong>Drehen:</strong> linke Maustaste</span>
   <span><strong>Zoom:</strong> Mausrad</span>
   <span><strong>Verschieben:</strong> rechte Maustaste</span>
@@ -104,32 +198,93 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const STL_URL = 'volume-18-skulptur.stl';
 // ====================================================
 
+// ========== THEMES (Hintergründe) ==========
+const themes = {
+  'studio-hell': {
+    label: 'Studio hell',
+    type: 'gradient',
+    stops: [['#f5f7fa', 0], ['#e4e9f0', 0.6], ['#c8d2de', 1]],
+    isLight: true,
+    gridColors: [0xc8d2de, 0xb5c0cd],
+    gridOpacity: 0.6,
+    shadowOpacity: 0.25,
+    exposure: 1.0
+  },
+  'tinkercad': {
+    label: 'Tinkercad',
+    type: 'solid',
+    color: '#ffffff',
+    isLight: true,
+    gridColors: [0xd5e3f0, 0xb8ccde],
+    gridOpacity: 0.7,
+    shadowOpacity: 0.18,
+    exposure: 1.1
+  },
+  'studio-dunkel': {
+    label: 'Studio dunkel',
+    type: 'gradient',
+    stops: [['#2a3340', 0], ['#151a22', 0.5], ['#0a0d12', 1]],
+    isLight: false,
+    gridColors: [0x3a4352, 0x252b36],
+    gridOpacity: 0.5,
+    shadowOpacity: 0.45,
+    exposure: 1.1
+  },
+  'schwarz': {
+    label: 'Schwarz',
+    type: 'solid',
+    color: '#000000',
+    isLight: false,
+    gridColors: [0x2a3138, 0x1a1f24],
+    gridOpacity: 0.4,
+    shadowOpacity: 0.6,
+    exposure: 1.2
+  },
+  'himmel': {
+    label: 'Himmel',
+    type: 'gradient',
+    stops: [['#7cb7e0', 0], ['#c4dcef', 0.5], ['#f0e7d8', 1]],
+    isLight: true,
+    gridColors: [0xa8c4d8, 0x8eb0c8],
+    gridOpacity: 0.5,
+    shadowOpacity: 0.3,
+    exposure: 1.0
+  },
+  'papier': {
+    label: 'Papier',
+    type: 'solid',
+    color: '#f3ede0',
+    isLight: true,
+    gridColors: [0xd4cbb8, 0xc0b69f],
+    gridOpacity: 0.5,
+    shadowOpacity: 0.22,
+    exposure: 1.05
+  }
+};
+
+// ========== MODELLFARBEN ==========
+const modelColors = [
+  { name: 'Blaugrau',   color: 0xb8c5cc, metalness: 0.4,  roughness: 0.35 },
+  { name: 'Türkis',     color: 0x7dd3c0, metalness: 0.2,  roughness: 0.4 },
+  { name: 'Gold',       color: 0xe8b96a, metalness: 0.85, roughness: 0.25 },
+  { name: 'Kupfer',     color: 0xc87a4a, metalness: 0.8,  roughness: 0.3 },
+  { name: 'Weiss',      color: 0xf0f0f0, metalness: 0.1,  roughness: 0.5 },
+  { name: 'Schwarz',    color: 0x2a2a2a, metalness: 0.5,  roughness: 0.3 },
+  { name: 'Orange',     color: 0xe76f51, metalness: 0.1,  roughness: 0.45 },
+  { name: 'Rot',        color: 0xc23b3b, metalness: 0.2,  roughness: 0.35 },
+  { name: 'Grün',       color: 0x5a9a6c, metalness: 0.2,  roughness: 0.4 },
+  { name: 'Blau',       color: 0x4a7bb8, metalness: 0.2,  roughness: 0.4 },
+  { name: 'Violett',    color: 0x8b5cb8, metalness: 0.3,  roughness: 0.35 },
+  { name: 'Silber',     color: 0xc8c8c8, metalness: 0.9,  roughness: 0.2 }
+];
+
+// ========== THREE.JS SETUP ==========
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
-// Gradient-Hintergrund (oben heller, unten dunkler)
-function createGradientTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 2;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 0, 512);
-  gradient.addColorStop(0, '#2a3340');
-  gradient.addColorStop(0.5, '#151a22');
-  gradient.addColorStop(1, '#0a0d12');
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 2, 512);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
-scene.background = createGradientTexture();
-
-// Kamera
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
 camera.position.set(150, 120, 200);
 
-// Renderer mit Tone Mapping
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -140,12 +295,12 @@ renderer.toneMappingExposure = 1.1;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 container.appendChild(renderer.domElement);
 
-// Environment Map für realistische Reflexionen
+// Environment (Reflexionen)
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-// Drei-Punkt-Beleuchtung (Foto-Studio-Setup)
-const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.2);
+// Beleuchtung
+const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.0);
 keyLight.position.set(120, 200, 100);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
@@ -157,29 +312,27 @@ keyLight.shadow.bias = -0.0005;
 keyLight.shadow.radius = 4;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.6);
+const fillLight = new THREE.DirectionalLight(0xb0d4e0, 0.6);
 fillLight.position.set(-120, 80, -80);
 scene.add(fillLight);
 
-const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
 rimLight.position.set(0, 100, -150);
 scene.add(rimLight);
 
-const ambient = new THREE.AmbientLight(0x404850, 0.3);
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambient);
 
 // Schattenboden
 const groundGeo = new THREE.PlaneGeometry(1000, 1000);
-const groundMat = new THREE.ShadowMaterial({ opacity: 0.45 });
+const groundMat = new THREE.ShadowMaterial({ opacity: 0.4 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Dezentes Gitter
-const grid = new THREE.GridHelper(600, 30, 0x3a4352, 0x252b36);
-grid.material.transparent = true;
-grid.material.opacity = 0.5;
+// Gitter
+let grid = new THREE.GridHelper(600, 30, 0x3a4352, 0x252b36);
 scene.add(grid);
 
 // Steuerung
@@ -187,7 +340,95 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 
-// STL laden
+// ========== HINTERGRUND-UMSCHALTUNG ==========
+function createGradientTexture(stops) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+  stops.forEach(([color, pos]) => gradient.addColorStop(pos, color));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 2, 512);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function applyTheme(key) {
+  const t = themes[key];
+
+  // Hintergrund setzen
+  if (t.type === 'gradient') {
+    scene.background = createGradientTexture(t.stops);
+  } else {
+    scene.background = new THREE.Color(t.color);
+  }
+
+  // Body-Klasse für helle/dunkle Texte
+  document.body.classList.toggle('light', t.isLight);
+
+  // Gitter neu erstellen (GridHelper lässt sich nicht dynamisch umfärben)
+  const oldGridY = grid.position.y;
+  scene.remove(grid);
+  grid.dispose?.();
+  grid = new THREE.GridHelper(600, 30, t.gridColors[0], t.gridColors[1]);
+  grid.material.transparent = true;
+  grid.material.opacity = t.gridOpacity;
+  grid.position.y = oldGridY;
+  scene.add(grid);
+
+  // Schatten-Stärke
+  groundMat.opacity = t.shadowOpacity;
+
+  // Helligkeit anpassen
+  renderer.toneMappingExposure = t.exposure;
+
+  // Active-State in UI
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === key);
+  });
+}
+
+// UI für Hintergründe bauen
+const themeGrid = document.getElementById('theme-grid');
+Object.entries(themes).forEach(([key, t]) => {
+  const btn = document.createElement('button');
+  btn.className = 'theme-btn';
+  btn.dataset.theme = key;
+  btn.textContent = t.label;
+  btn.addEventListener('click', () => applyTheme(key));
+  themeGrid.appendChild(btn);
+});
+
+// ========== FARB-UMSCHALTUNG ==========
+let currentMesh = null;
+
+function applyColor(idx) {
+  if (!currentMesh) return;
+  const c = modelColors[idx];
+  currentMesh.material.color.setHex(c.color);
+  currentMesh.material.metalness = c.metalness;
+  currentMesh.material.roughness = c.roughness;
+  currentMesh.material.needsUpdate = true;
+
+  document.querySelectorAll('.color-swatch').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+}
+
+// UI für Farben bauen
+const colorGrid = document.getElementById('color-grid');
+modelColors.forEach((c, idx) => {
+  const sw = document.createElement('div');
+  sw.className = 'color-swatch';
+  sw.style.background = '#' + c.color.toString(16).padStart(6, '0');
+  sw.title = c.name;
+  sw.addEventListener('click', () => applyColor(idx));
+  colorGrid.appendChild(sw);
+});
+
+// ========== STL LADEN ==========
 const loader = new STLLoader();
 const loadingEl = document.getElementById('loading');
 const statsEl = document.getElementById('stats');
@@ -198,9 +439,7 @@ filenameEl.textContent = STL_URL.split('/').pop();
 loader.load(
   STL_URL,
   (geometry) => {
-    // Tinkercad Z-up zu Three.js Y-up
     geometry.rotateX(-Math.PI / 2);
-
     geometry.computeBoundingBox();
     geometry.computeVertexNormals();
 
@@ -208,11 +447,11 @@ loader.load(
     const center = bbox.getCenter(new THREE.Vector3());
     geometry.translate(-center.x, -center.y, -center.z);
 
-    // Edles Material - leichter Metallschimmer
+    const initialColor = modelColors[0];
     const material = new THREE.MeshStandardMaterial({
-      color: 0xb8c5cc,
-      metalness: 0.4,
-      roughness: 0.35,
+      color: initialColor.color,
+      metalness: initialColor.metalness,
+      roughness: initialColor.roughness,
       envMapIntensity: 1.2,
       flatShading: false
     });
@@ -220,6 +459,7 @@ loader.load(
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
+    currentMesh = mesh;
 
     const size = bbox.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
@@ -237,6 +477,9 @@ loader.load(
       Grösse: ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm
     `;
     loadingEl.classList.add('hidden');
+
+    // Aktive Farbe markieren
+    document.querySelectorAll('.color-swatch')[0].classList.add('active');
   },
   (xhr) => {
     if (xhr.lengthComputable) {
@@ -250,6 +493,9 @@ loader.load(
     console.error(error);
   }
 );
+
+// ========== START ==========
+applyTheme('studio-hell'); // Startet mit hellem Hintergrund
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
