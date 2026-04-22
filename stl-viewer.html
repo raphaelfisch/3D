@@ -33,6 +33,11 @@
   body.light .settings-toggle { color: var(--text-dark); }
   body.light .settings-close { color: var(--text-dark); }
 
+  body.resizing *, body.resizing *::before, body.resizing *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
   #canvas-container {
     position: fixed; inset: 0;
     touch-action: none;
@@ -852,11 +857,17 @@ loader.load(
 // Start
 applyTheme('studio-hell');
 
+let resizeTimeout;
 window.addEventListener('resize', () => {
+  document.body.classList.add('resizing');
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    document.body.classList.remove('resizing');
+  }, 150);
+
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  // Nur auto-framen, wenn der Nutzer noch nicht selbst gezoomt hat
   if (!userHasZoomed) frameModel();
 });
 
