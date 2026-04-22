@@ -163,10 +163,10 @@ loader.load(
     geometry.computeBoundingBox();
     geometry.computeVertexNormals();
 
-    // Zentrieren
+    // Zentrieren (auch vertikal - wie Tinkercad)
     const bbox = geometry.boundingBox;
     const center = bbox.getCenter(new THREE.Vector3());
-    geometry.translate(-center.x, -bbox.min.y, -center.z);
+    geometry.translate(-center.x, -center.y, -center.z);
 
     const material = new THREE.MeshStandardMaterial({
       color: 0x7dd3c0,
@@ -184,12 +184,12 @@ loader.load(
     const maxDim = Math.max(size.x, size.y, size.z);
     const dist = maxDim * 2.2;
     camera.position.set(dist, dist * 0.7, dist);
-    controls.target.set(0, size.y / 2, 0);
+    controls.target.set(0, 0, 0);
     controls.update();
 
-    // Ground unter das Objekt legen
-    ground.position.y = 0;
-    grid.position.y = 0;
+    // Ground und Gitter unter das Objekt legen (halbe Höhe nach unten)
+    ground.position.y = -size.y / 2;
+    grid.position.y = -size.y / 2;
 
     // Stats anzeigen
     const triangles = geometry.attributes.position.count / 3;
