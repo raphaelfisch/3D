@@ -223,6 +223,122 @@
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
 
+  /* Modal für grosse Einzelansicht */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 7, 12, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .modal-overlay.active {
+    display: flex;
+    opacity: 1;
+  }
+  .modal-content {
+    position: relative;
+    width: min(90vw, 900px);
+    max-height: 90vh;
+    background: linear-gradient(180deg, #1a2030 0%, #0f141a 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    transform: scale(0.96);
+    transition: transform 0.25s ease;
+  }
+  .modal-overlay.active .modal-content { transform: scale(1); }
+
+  .modal-viewer {
+    position: relative;
+    background: linear-gradient(135deg, #1a2030 0%, #0a0d12 100%);
+    cursor: grab;
+    min-height: 500px;
+  }
+  .modal-viewer:active { cursor: grabbing; }
+  .modal-viewer canvas { width: 100%; height: 100%; display: block; }
+
+  .modal-info {
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+  }
+  .modal-info h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .modal-info .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+  .modal-info .stats {
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .modal-info .stat {
+    border-radius: 12px;
+    padding: 14px 8px;
+  }
+  .modal-info .stat-num {
+    font-size: 28px;
+  }
+  .modal-info .stat-label {
+    font-size: 10px;
+    margin-top: 4px;
+  }
+  .modal-info .euler {
+    font-size: 13px;
+    padding: 14px 0 0;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(10, 13, 18, 0.6);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .modal-close:hover {
+    background: rgba(10, 13, 18, 0.9);
+    border-color: rgba(125, 211, 192, 0.4);
+  }
+  .modal-close svg { width: 16px; height: 16px; }
+
+  @media (max-width: 720px) {
+    .modal-content {
+      grid-template-columns: 1fr;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-viewer { min-height: 320px; }
+    .modal-info { padding: 24px; }
+    .modal-info h2 { font-size: 26px; }
+  }
+
   @media (max-width: 640px) {
     .back-link { margin: 16px 0 0 20px; }
     .hero { padding: 32px 20px 16px; }
@@ -256,7 +372,7 @@
     </div>
     <div class="solid-body">
       <div class="solid-name">Tetraeder</div>
-      <div class="solid-alt">4-Flächner · aus Dreiecken</div>
+      <div class="solid-alt">4 Flächen aus gleichseitigen Dreiecken</div>
       <div class="stats">
         <div class="stat"><div class="stat-num">4</div><div class="stat-label">Flächen</div></div>
         <div class="stat"><div class="stat-num">6</div><div class="stat-label">Kanten</div></div>
@@ -271,7 +387,7 @@
     </div>
     <div class="solid-body">
       <div class="solid-name">Hexaeder</div>
-      <div class="solid-alt">Würfel · aus Quadraten</div>
+      <div class="solid-alt">6 Flächen aus Quadraten</div>
       <div class="stats">
         <div class="stat"><div class="stat-num">6</div><div class="stat-label">Flächen</div></div>
         <div class="stat"><div class="stat-num">12</div><div class="stat-label">Kanten</div></div>
@@ -286,7 +402,7 @@
     </div>
     <div class="solid-body">
       <div class="solid-name">Oktaeder</div>
-      <div class="solid-alt">8-Flächner · aus Dreiecken</div>
+      <div class="solid-alt">8 Flächen aus gleichseitigen Dreiecken</div>
       <div class="stats">
         <div class="stat"><div class="stat-num">8</div><div class="stat-label">Flächen</div></div>
         <div class="stat"><div class="stat-num">12</div><div class="stat-label">Kanten</div></div>
@@ -301,7 +417,7 @@
     </div>
     <div class="solid-body">
       <div class="solid-name">Dodekaeder</div>
-      <div class="solid-alt">12-Flächner · aus Fünfecken</div>
+      <div class="solid-alt">12 Flächen aus regelmässigen Fünfecken</div>
       <div class="stats">
         <div class="stat"><div class="stat-num">12</div><div class="stat-label">Flächen</div></div>
         <div class="stat"><div class="stat-num">30</div><div class="stat-label">Kanten</div></div>
@@ -316,7 +432,7 @@
     </div>
     <div class="solid-body">
       <div class="solid-name">Ikosaeder</div>
-      <div class="solid-alt">20-Flächner · aus Dreiecken</div>
+      <div class="solid-alt">20 Flächen aus gleichseitigen Dreiecken</div>
       <div class="stats">
         <div class="stat"><div class="stat-num">20</div><div class="stat-label">Flächen</div></div>
         <div class="stat"><div class="stat-num">30</div><div class="stat-label">Kanten</div></div>
@@ -341,6 +457,28 @@
   © Raphael Fisch 2026
 </footer>
 
+<!-- Modal für Grossansicht -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose" aria-label="Schliessen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+    <div class="modal-viewer" id="modalViewer"></div>
+    <div class="modal-info">
+      <h2 id="modalTitle">Körper</h2>
+      <div class="subtitle" id="modalSubtitle">Beschreibung</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num" id="modalFlaechen">-</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num" id="modalKanten">-</div><div class="stat-label">Kanten</div></div>
+        <div class="stat"><div class="stat-num" id="modalEcken">-</div><div class="stat-label">Ecken</div></div>
+      </div>
+      <div class="euler" id="modalEuler">F + E − K = <strong>2</strong></div>
+    </div>
+  </div>
+</div>
+
 <script type="importmap">
 {
   "imports": {
@@ -354,20 +492,57 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-function getGeometry(name) {
-  switch (name) {
-    case 'tetraeder':  return new THREE.TetrahedronGeometry(1.4);
-    case 'hexaeder':   return new THREE.BoxGeometry(1.9, 1.9, 1.9);
-    case 'oktaeder':   return new THREE.OctahedronGeometry(1.4);
-    case 'dodekaeder': return new THREE.DodecahedronGeometry(1.3);
-    case 'ikosaeder':  return new THREE.IcosahedronGeometry(1.3);
+// Zentrale Daten für jeden Körper (Anzeige + Geometrie)
+const SOLIDS = {
+  tetraeder: {
+    name: 'Tetraeder',
+    subtitle: '4 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 4, kanten: 6, ecken: 4,
+    geometry: () => new THREE.TetrahedronGeometry(1.4)
+  },
+  hexaeder: {
+    name: 'Hexaeder',
+    subtitle: '6 Flächen aus Quadraten',
+    flaechen: 6, kanten: 12, ecken: 8,
+    geometry: () => new THREE.BoxGeometry(1.9, 1.9, 1.9)
+  },
+  oktaeder: {
+    name: 'Oktaeder',
+    subtitle: '8 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 8, kanten: 12, ecken: 6,
+    geometry: () => new THREE.OctahedronGeometry(1.4)
+  },
+  dodekaeder: {
+    name: 'Dodekaeder',
+    subtitle: '12 Flächen aus regelmässigen Fünfecken',
+    flaechen: 12, kanten: 30, ecken: 20,
+    geometry: () => new THREE.DodecahedronGeometry(1.3)
+  },
+  ikosaeder: {
+    name: 'Ikosaeder',
+    subtitle: '20 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 20, kanten: 30, ecken: 12,
+    geometry: () => new THREE.IcosahedronGeometry(1.3)
   }
+};
+
+// Shared Environment für alle Viewer (Performance + weniger Speicher)
+let sharedEnvTexture = null;
+function getEnvironmentTexture(renderer) {
+  if (!sharedEnvTexture) {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    sharedEnvTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  }
+  return sharedEnvTexture;
 }
 
-function createViewer(container, solidName) {
+function createViewer(container, solidName, opts = {}) {
+  const { onClick = null, cameraDistance = 1 } = opts;
+
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-  camera.position.set(3.5, 2.5, 4);
+  const camScale = cameraDistance;
+  camera.position.set(3.5 * camScale, 2.5 * camScale, 4 * camScale);
   camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -387,8 +562,7 @@ function createViewer(container, solidName) {
   container.appendChild(renderer.domElement);
   resize();
 
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = getEnvironmentTexture(renderer);
 
   const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.4);
   keyLight.position.set(3, 5, 3);
@@ -409,7 +583,7 @@ function createViewer(container, solidName) {
   const group = new THREE.Group();
   scene.add(group);
 
-  const geo = getGeometry(solidName);
+  const geo = SOLIDS[solidName].geometry();
   const mesh = new THREE.Mesh(geo, material);
   group.add(mesh);
 
@@ -419,29 +593,47 @@ function createViewer(container, solidName) {
   });
   group.add(new THREE.LineSegments(edges, lineMat));
 
-  // Maus-/Touch-Interaktion: manuelles Drehen überlagert die Autorotation,
-  // stoppt sie aber nicht – nach dem Loslassen läuft sie nahtlos weiter.
-  let isDragging = false;
+  // Interaktion: Klick vs. Drag unterscheiden
+  let isPointerDown = false;
+  let didDrag = false;
+  let downX = 0, downY = 0;
   let prevX = 0, prevY = 0;
-  let manualYawOffset = 0;  // vom User hinzugefügte Y-Rotation
-  let manualPitch = 0;       // vom User hinzugefügte X-Rotation (kippen)
+  let manualYawOffset = 0;
+  let manualPitch = 0;
+  const DRAG_THRESHOLD = 5; // Pixel – darunter gilt es als Klick
+
+  const getXY = (e) => ({
+    x: e.clientX ?? e.touches?.[0]?.clientX ?? 0,
+    y: e.clientY ?? e.touches?.[0]?.clientY ?? 0
+  });
 
   const onPointerDown = (e) => {
-    isDragging = true;
-    prevX = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-    prevY = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
+    isPointerDown = true;
+    didDrag = false;
+    const { x, y } = getXY(e);
+    downX = prevX = x;
+    downY = prevY = y;
   };
   const onPointerMove = (e) => {
-    if (!isDragging) return;
-    const x = e.clientX ?? e.touches?.[0]?.clientX ?? 0;
-    const y = e.clientY ?? e.touches?.[0]?.clientY ?? 0;
-    manualYawOffset += (x - prevX) * 0.01;
-    manualPitch += (y - prevY) * 0.01;
-    manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
+    if (!isPointerDown) return;
+    const { x, y } = getXY(e);
+    const dx = x - downX;
+    const dy = y - downY;
+    if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) didDrag = true;
+    if (didDrag) {
+      manualYawOffset += (x - prevX) * 0.01;
+      manualPitch += (y - prevY) * 0.01;
+      manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
+    }
     prevX = x;
     prevY = y;
   };
-  const onPointerUp = () => { isDragging = false; };
+  const onPointerUp = () => {
+    if (isPointerDown && !didDrag && onClick) {
+      onClick();
+    }
+    isPointerDown = false;
+  };
 
   container.addEventListener('mousedown', onPointerDown);
   container.addEventListener('touchstart', onPointerDown, { passive: true });
@@ -451,7 +643,10 @@ function createViewer(container, solidName) {
   window.addEventListener('touchend', onPointerUp);
 
   let autoYaw = 0;
+  let running = true;
+
   function animate() {
+    if (!running) return;
     requestAnimationFrame(animate);
     autoYaw += 0.005;
     group.rotation.y = autoYaw + manualYawOffset;
@@ -460,11 +655,83 @@ function createViewer(container, solidName) {
   }
   animate();
 
-  new ResizeObserver(resize).observe(container);
+  const resizeObs = new ResizeObserver(() => {
+    // In den nächsten Frame verschieben, damit setSize nicht innerhalb
+    // des ResizeObserver-Callbacks selbst zu einem Relayout führt
+    // (vermeidet "ResizeObserver loop completed with undelivered notifications")
+    requestAnimationFrame(resize);
+  });
+  resizeObs.observe(container);
+
+  // Cleanup-Funktion für Modal-Schliessen
+  return {
+    dispose() {
+      running = false;
+      resizeObs.disconnect();
+      container.removeEventListener('mousedown', onPointerDown);
+      container.removeEventListener('touchstart', onPointerDown);
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchend', onPointerUp);
+      geo.dispose();
+      edges.dispose();
+      material.dispose();
+      lineMat.dispose();
+      renderer.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+    }
+  };
 }
 
+// Modal-Logik
+const modal = document.getElementById('modal');
+const modalClose = document.getElementById('modalClose');
+const modalViewer = document.getElementById('modalViewer');
+let modalViewerInstance = null;
+
+function openModal(solidName) {
+  const data = SOLIDS[solidName];
+  document.getElementById('modalTitle').textContent = data.name;
+  document.getElementById('modalSubtitle').textContent = data.subtitle;
+  document.getElementById('modalFlaechen').textContent = data.flaechen;
+  document.getElementById('modalKanten').textContent = data.kanten;
+  document.getElementById('modalEcken').textContent = data.ecken;
+  document.getElementById('modalEuler').innerHTML =
+    `F + E − K = ${data.flaechen} + ${data.ecken} − ${data.kanten} = <strong>2</strong>`;
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Viewer erst nach der CSS-Transition starten, damit Canvas die richtige Grösse hat
+  requestAnimationFrame(() => {
+    modalViewerInstance = createViewer(modalViewer, solidName, { cameraDistance: 1.1 });
+  });
+}
+
+function closeModal() {
+  modal.classList.remove('active');
+  document.body.style.overflow = '';
+  if (modalViewerInstance) {
+    modalViewerInstance.dispose();
+    modalViewerInstance = null;
+  }
+}
+
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+});
+
+// Kacheln initialisieren
 document.querySelectorAll('[data-solid]').forEach(el => {
-  createViewer(el, el.dataset.solid);
+  const name = el.dataset.solid;
+  createViewer(el, name, { onClick: () => openModal(name) });
 });
 </script>
 
