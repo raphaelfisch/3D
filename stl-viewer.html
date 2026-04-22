@@ -704,14 +704,50 @@ settingsToggle.addEventListener('click', toggleSettings);
 settingsClose.addEventListener('click', closeSettings);
 overlay.addEventListener('click', closeSettings);
 
-// Reset-View-Button: Ansicht auf Standard zurücksetzen
+// Reset-View-Button: Ansicht sanft zur Home-Position animieren
 document.getElementById('reset-view').addEventListener('click', () => {
   if (!modelSize) return;
+
   const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
-  camera.position.set(maxDim, maxDim * 0.7, maxDim);
-  controls.target.set(0, 0, 0);
-  userHasZoomed = false;
-  frameModel();
+
+  // Ziel-Position berechnen (wie in frameModel, aber ohne Kamera direkt zu setzen)
+  const targetDirection = new THREE.Vector3(maxDim, maxDim * 0.7, maxDim).normalize();
+  const fov = camera.fov * (Math.PI / 180);
+  const aspect = camera.aspect;
+  const distV = (maxDim / 2) / Math.tan(fov / 2);
+  const distH = distV / aspect;
+  const dist = Math.max(distV, distH) * 1.4;
+
+  const startPos = camera.position.clone();
+  const startTarget = controls.target.clone();
+  const endPos = targetDirection.multiplyScalar(dist);
+  const endTarget = new THREE.Vector3(0, 0, 0);
+
+  const duration = 800; // Millisekunden
+  const startTime = performance.now();
+
+  // Ease-Out-Funktion (schnell starten, sanft auslaufen)
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function animateReset() {
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = easeOutCubic(t);
+
+    camera.position.lerpVectors(startPos, endPos, eased);
+    controls.target.lerpVectors(startTarget, endTarget, eased);
+    controls.update();
+
+    if (t < 1) {
+      requestAnimationFrame(animateReset);
+    } else {
+      userHasZoomed = false;
+    }
+  }
+
+  animateReset();
 });
 
 // Panel startet geschlossen auf allen Geräten
