@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>3D-Viewer</title>
 <style>
   :root {
@@ -16,23 +16,28 @@
     --muted-dark: #5a6066;
     --accent: #7dd3c0;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
     height:100%; overflow:hidden;
     font-family: 'Segoe UI', system-ui, sans-serif;
     color: var(--text);
     transition: color 0.3s;
+    overscroll-behavior: none;
   }
   body.light { color: var(--text-dark); }
   body.light .panel { background: var(--panel-dark); border-color: var(--border-dark); }
   body.light .muted-text { color: var(--muted-dark); }
-  body.light .controls span strong { color: var(--text-dark); }
   body.light .theme-btn { color: var(--text-dark); border-color: var(--border-dark); }
   body.light .theme-btn:hover { background: rgba(0,0,0,0.06); }
   body.light .color-swatch { border-color: rgba(0,0,0,0.2); }
+  body.light .settings-toggle { color: var(--text-dark); }
+  body.light .settings-close { color: var(--text-dark); }
 
-  #canvas-container { position: fixed; inset: 0; }
-  canvas { display:block; }
+  #canvas-container {
+    position: fixed; inset: 0;
+    touch-action: none;
+  }
+  canvas { display:block; touch-action: none; }
 
   .panel {
     position: fixed;
@@ -47,25 +52,101 @@
   }
 
   #info-panel {
-    top: 20px; left: 20px;
-    min-width: 240px;
+    top: 16px; left: 16px;
+    max-width: 260px;
   }
   #info-panel h1 {
     font-size: 11px; font-weight: 700;
     letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
-  #info-panel .filename { font-size: 15px; font-weight: 500; margin-bottom: 6px; word-break: break-all; }
-  #info-panel .stats { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  #info-panel .filename { font-size: 14px; font-weight: 500; margin-bottom: 4px; word-break: break-all; }
+  #info-panel .stats { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+  /* Settings-Toggle (Zahnrad-Button, immer sichtbar) */
+  .settings-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    width: 48px; height: 48px;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center; justify-content: center;
+    color: var(--text);
+    font-size: 22px;
+    transition: all 0.2s;
+    z-index: 20;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  #reset-view {
+    right: 76px; /* Links neben dem Zahnrad (16 + 48 + 12 Abstand) */
+    font-size: 24px;
+  }
+  .settings-toggle:hover, .settings-toggle:active {
+    background: rgba(125, 211, 192, 0.15);
+    border-color: var(--accent);
+  }
+
+  /* Overlay hinter dem Panel (Mobile) */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   #settings-panel {
-    top: 20px; right: 20px;
-    width: 260px;
+    top: 16px; right: 16px;
+    width: 280px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    z-index: 15;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s;
+    transform-origin: top right;
   }
-  .settings-section {
+  #settings-panel.hidden {
+    transform: scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .settings-header {
+    display: none;
+    align-items: center; justify-content: space-between;
     margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
   }
+  body.light .settings-header { border-bottom-color: var(--border-dark); }
+  .settings-header h3 {
+    font-size: 14px; font-weight: 600;
+  }
+  .settings-close {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .settings-close:hover { background: rgba(255,255,255,0.1); }
+
+  .settings-section { margin-bottom: 18px; }
   .settings-section:last-child { margin-bottom: 0; }
   .settings-section h2 {
     font-size: 10px; font-weight: 700;
@@ -77,19 +158,20 @@
   .theme-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 8px;
   }
   .theme-btn {
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text);
     background: transparent;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.15s;
     text-align: left;
+    min-height: 44px;
   }
   .theme-btn:hover {
     background: rgba(255,255,255,0.08);
@@ -112,11 +194,12 @@
   }
   .color-swatch {
     aspect-ratio: 1;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     border: 2px solid rgba(255,255,255,0.15);
     transition: all 0.15s;
     position: relative;
+    min-height: 36px;
   }
   .color-swatch:hover {
     transform: scale(1.1);
@@ -128,11 +211,11 @@
 
   .slider-row {
     display: flex; align-items: center;
-    gap: 10px; margin-bottom: 8px;
+    gap: 12px; margin-bottom: 14px;
   }
   .slider-row:last-child { margin-bottom: 0; }
   .slider-row label {
-    font-size: 11px; font-weight: 500;
+    font-size: 12px; font-weight: 500;
     color: var(--muted); min-width: 70px;
   }
   body.light .slider-row label { color: var(--muted-dark); }
@@ -140,10 +223,12 @@
     flex: 1;
     -webkit-appearance: none;
     appearance: none;
-    height: 4px;
+    height: 6px;
     background: rgba(255,255,255,0.15);
-    border-radius: 2px;
+    border-radius: 3px;
     outline: none;
+    padding: 0;
+    margin: 12px 0;
   }
   body.light .slider-row input[type="range"] {
     background: rgba(0,0,0,0.15);
@@ -151,35 +236,47 @@
   .slider-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 14px; height: 14px;
+    width: 24px; height: 24px;
     background: var(--accent);
     border-radius: 50%;
     cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.9);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    border: 3px solid rgba(255,255,255,0.95);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
   .slider-row input[type="range"]::-moz-range-thumb {
-    width: 14px; height: 14px;
+    width: 24px; height: 24px;
     background: var(--accent);
     border-radius: 50%;
     cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.9);
+    border: 3px solid rgba(255,255,255,0.95);
   }
-  .slider-row .value {
-    font-size: 11px; color: var(--muted);
-    min-width: 32px; text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-  body.light .slider-row .value { color: var(--muted-dark); }
 
   .controls {
-    position: fixed; bottom: 20px; left: 50%;
+    position: fixed; bottom: 16px; left: 50%;
     transform: translateX(-50%);
-    display: flex; gap: 16px;
-    font-size: 12px; color: var(--muted);
-    padding: 10px 16px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(80px, 1fr));
+    column-gap: 20px;
+    row-gap: 2px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 12px 20px;
+    text-align: center;
+    max-width: calc(100vw - 32px);
   }
-  .controls span strong { color: var(--text); font-weight: 600; }
+  .controls .label {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  body.light .controls .label { color: var(--text-dark); }
+  .controls .value {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #controls-mobile { display: none; }
 
   .loading {
     position: fixed; inset: 0;
@@ -189,10 +286,57 @@
   }
   .loading.hidden { display: none; }
 
+  /* ============ MOBILE ============ */
   @media (max-width: 700px) {
-    #settings-panel { position: fixed; top: auto; right: 10px; left: 10px; bottom: 70px; width: auto; }
-    #info-panel { max-width: calc(100vw - 40px); }
-    .controls { display: none; }
+    #info-panel {
+      top: 12px; left: 12px; right: 140px;
+      max-width: unset;
+      padding: 12px 16px;
+    }
+    #info-panel .filename { font-size: 13px; }
+    #info-panel .stats { font-size: 11px; }
+
+    .settings-toggle {
+      top: 12px; right: 12px;
+      width: 52px; height: 52px;
+    }
+    #reset-view {
+      right: 76px;
+    }
+
+    #settings-panel {
+      top: auto;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      max-height: 75vh;
+      border-radius: 18px 18px 0 0;
+      transform: translateY(0);
+      transform-origin: bottom center;
+      padding: 20px 20px 28px;
+    }
+    #settings-panel.hidden {
+      transform: translateY(100%);
+      opacity: 1;
+    }
+
+    .settings-header { display: flex; }
+
+    .theme-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .theme-btn { padding: 14px 16px; font-size: 14px; min-height: 52px; }
+
+    .color-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .color-swatch { border-radius: 12px; min-height: 52px; }
+
+    #controls-desktop { display: none; }
+    #controls-mobile {
+      display: grid;
+      bottom: 12px;
+      padding: 10px 16px;
+      column-gap: 14px;
+    }
+    #controls-mobile .label { font-size: 9px; }
+    #controls-mobile .value { font-size: 11px; }
+    .loading { font-size: 13px; }
   }
 </style>
 </head>
@@ -201,12 +345,19 @@
 <div id="canvas-container"></div>
 
 <div class="panel" id="info-panel">
-  <h1>3D-Modell</h1>
   <div class="filename" id="filename">Wird geladen…</div>
   <div class="stats muted-text" id="stats">Wird geladen…</div>
 </div>
 
-<div class="panel" id="settings-panel">
+<button class="settings-toggle" id="reset-view" aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">⌂</button>
+<button class="settings-toggle" id="settings-toggle" aria-label="Einstellungen öffnen">⚙</button>
+<div class="overlay" id="overlay"></div>
+
+<div class="panel hidden" id="settings-panel">
+  <div class="settings-header">
+    <h3>Einstellungen</h3>
+    <button class="settings-close" id="settings-close" aria-label="Schliessen">×</button>
+  </div>
   <div class="settings-section">
     <h2>Hintergrund</h2>
     <div class="theme-grid" id="theme-grid"></div>
@@ -228,10 +379,22 @@
   </div>
 </div>
 
-<div class="panel controls">
-  <span><strong>Drehen:</strong> linke Maustaste</span>
-  <span><strong>Zoom:</strong> Mausrad</span>
-  <span><strong>Verschieben:</strong> rechte Maustaste</span>
+<div class="panel controls" id="controls-desktop">
+  <div class="label">Drehen</div>
+  <div class="label">Zoom</div>
+  <div class="label">Verschieben</div>
+  <div class="value">linke Maustaste</div>
+  <div class="value">Mausrad</div>
+  <div class="value">rechte Maustaste</div>
+</div>
+
+<div class="panel controls" id="controls-mobile">
+  <div class="label">Drehen</div>
+  <div class="label">Zoom</div>
+  <div class="label">Verschieben</div>
+  <div class="value">1 Finger</div>
+  <div class="value">2 Finger</div>
+  <div class="value">2 Finger ziehen</div>
 </div>
 
 <div class="loading" id="loading">Lade Modell…</div>
@@ -255,7 +418,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const STL_URL = 'volume-18-skulptur.stl';
 // ====================================================
 
-// ========== THEMES (Hintergründe) ==========
+// ========== THEMES ==========
 const themes = {
   'studio-hell': {
     label: 'Studio hell',
@@ -315,7 +478,7 @@ const modelColors = [
   { name: 'Silber',     color: 0xc8c8c8, metalness: 0.9,  roughness: 0.2 }
 ];
 
-// ========== THREE.JS SETUP ==========
+// ========== THREE.JS ==========
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 
@@ -324,19 +487,17 @@ camera.position.set(150, 120, 200);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 container.appendChild(renderer.domElement);
 
-// Environment (Reflexionen)
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-// Beleuchtung
 const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.0);
 keyLight.position.set(120, 200, 100);
 keyLight.castShadow = true;
@@ -360,7 +521,6 @@ scene.add(rimLight);
 const ambient = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambient);
 
-// Schattenboden
 const groundGeo = new THREE.PlaneGeometry(1000, 1000);
 const groundMat = new THREE.ShadowMaterial({ opacity: 0.4 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -368,16 +528,55 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Gitter
 let grid = new THREE.GridHelper(600, 30, 0x3a4352, 0x252b36);
 scene.add(grid);
 
-// Steuerung
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
+controls.enablePan = true;
+// Touch-Gesten: 1 Finger drehen, 2 Finger zoomen/pannen
+controls.touches = {
+  ONE: THREE.TOUCH.ROTATE,
+  TWO: THREE.TOUCH.DOLLY_PAN
+};
 
-// ========== HINTERGRUND-UMSCHALTUNG ==========
+// ========== MODEL FRAMING ==========
+// Berechnet automatisch den optimalen Kamera-Abstand
+// sodass das Modell immer gut ins Bild passt, egal welche Bildschirmgrösse
+let modelSize = null; // Wird nach dem Laden gesetzt
+let userHasZoomed = false; // Wird true, sobald der Nutzer selbst zoomt
+
+function frameModel() {
+  if (!modelSize) return;
+
+  const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+
+  // Abstand berechnen basierend auf Field-of-View und Aspect Ratio
+  const fov = camera.fov * (Math.PI / 180);
+  const aspect = camera.aspect;
+
+  // Vertikaler Abstand (basierend auf Höhe)
+  const distV = (maxDim / 2) / Math.tan(fov / 2);
+  // Horizontaler Abstand (basierend auf Breite)
+  const distH = distV / aspect;
+
+  // Den grösseren Abstand nehmen, damit Modell in beiden Dimensionen passt
+  // Plus Puffer (1.4) für etwas Abstand zum Rand
+  const dist = Math.max(distV, distH) * 1.4;
+
+  // Kamera-Position beibehalten (Richtung), nur Abstand anpassen
+  const direction = new THREE.Vector3()
+    .subVectors(camera.position, controls.target)
+    .normalize();
+  camera.position.copy(controls.target).addScaledVector(direction, dist);
+  controls.update();
+}
+
+// Wenn Nutzer selbst zoomt, Auto-Framing deaktivieren
+controls.addEventListener('start', () => {
+  userHasZoomed = true;
+});
 function createGradientTexture(stops) {
   const canvas = document.createElement('canvas');
   canvas.width = 2;
@@ -395,17 +594,14 @@ function createGradientTexture(stops) {
 function applyTheme(key) {
   const t = themes[key];
 
-  // Hintergrund setzen
   if (t.type === 'gradient') {
     scene.background = createGradientTexture(t.stops);
   } else {
     scene.background = new THREE.Color(t.color);
   }
 
-  // Body-Klasse für helle/dunkle Texte
   document.body.classList.toggle('light', t.isLight);
 
-  // Gitter neu erstellen (GridHelper lässt sich nicht dynamisch umfärben)
   const oldGridY = grid.position.y;
   scene.remove(grid);
   grid.dispose?.();
@@ -415,21 +611,17 @@ function applyTheme(key) {
   grid.position.y = oldGridY;
   scene.add(grid);
 
-  // Schatten und Helligkeit auf Theme-Default setzen (Slider folgt)
   groundMat.opacity = t.shadowOpacity;
   renderer.toneMappingExposure = t.exposure;
 
-  // Slider-UI mit den neuen Werten synchronisieren
   exposureSlider.value = t.exposure;
   shadowSlider.value = t.shadowOpacity;
 
-  // Active-State in UI
   document.querySelectorAll('.theme-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === key);
   });
 }
 
-// UI für Hintergründe bauen
 const themeGrid = document.getElementById('theme-grid');
 Object.entries(themes).forEach(([key, t]) => {
   const btn = document.createElement('button');
@@ -440,7 +632,7 @@ Object.entries(themes).forEach(([key, t]) => {
   themeGrid.appendChild(btn);
 });
 
-// Slider-Referenzen
+// ========== SLIDER ==========
 const exposureSlider = document.getElementById('exposure-slider');
 const shadowSlider = document.getElementById('shadow-slider');
 
@@ -452,7 +644,7 @@ shadowSlider.addEventListener('input', (e) => {
   groundMat.opacity = parseFloat(e.target.value);
 });
 
-// ========== FARB-UMSCHALTUNG ==========
+// ========== FARBEN ==========
 let currentMesh = null;
 
 function applyColor(idx) {
@@ -468,7 +660,6 @@ function applyColor(idx) {
   });
 }
 
-// UI für Farben bauen
 const colorGrid = document.getElementById('color-grid');
 modelColors.forEach((c, idx) => {
   const sw = document.createElement('div');
@@ -478,6 +669,47 @@ modelColors.forEach((c, idx) => {
   sw.addEventListener('click', () => applyColor(idx));
   colorGrid.appendChild(sw);
 });
+
+// ========== SETTINGS-TOGGLE ==========
+const settingsPanel = document.getElementById('settings-panel');
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsClose = document.getElementById('settings-close');
+const overlay = document.getElementById('overlay');
+
+function isMobile() {
+  return window.innerWidth <= 700;
+}
+
+function openSettings() {
+  settingsPanel.classList.remove('hidden');
+  if (isMobile()) overlay.classList.add('visible');
+}
+
+function closeSettings() {
+  settingsPanel.classList.add('hidden');
+  overlay.classList.remove('visible');
+}
+
+function toggleSettings() {
+  if (settingsPanel.classList.contains('hidden')) openSettings();
+  else closeSettings();
+}
+
+settingsToggle.addEventListener('click', toggleSettings);
+settingsClose.addEventListener('click', closeSettings);
+overlay.addEventListener('click', closeSettings);
+
+// Reset-View-Button: Ansicht auf Standard zurücksetzen
+document.getElementById('reset-view').addEventListener('click', () => {
+  if (!modelSize) return;
+  const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+  camera.position.set(maxDim, maxDim * 0.7, maxDim);
+  controls.target.set(0, 0, 0);
+  userHasZoomed = false;
+  frameModel();
+});
+
+// Panel startet geschlossen auf allen Geräten
 
 // ========== STL LADEN ==========
 const loader = new STLLoader();
@@ -513,23 +745,21 @@ loader.load(
     currentMesh = mesh;
 
     const size = bbox.getSize(new THREE.Vector3());
+    modelSize = size;
+
+    // Kamera-Blickrichtung setzen (isometrisch-ähnlich), dann smartes Framing
     const maxDim = Math.max(size.x, size.y, size.z);
-    const dist = maxDim * 2.2;
-    camera.position.set(dist, dist * 0.7, dist);
+    camera.position.set(maxDim, maxDim * 0.7, maxDim);
     controls.target.set(0, 0, 0);
-    controls.update();
+    frameModel();
 
     ground.position.y = -size.y / 2;
     grid.position.y = -size.y / 2;
 
     const triangles = geometry.attributes.position.count / 3;
-    statsEl.innerHTML = `
-      Dreiecke: ${triangles.toLocaleString('de-CH')}<br>
-      Grösse: ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm
-    `;
+    statsEl.textContent = `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`;
     loadingEl.classList.add('hidden');
 
-    // Aktive Farbe markieren
     document.querySelectorAll('.color-swatch')[0].classList.add('active');
   },
   (xhr) => {
@@ -545,13 +775,15 @@ loader.load(
   }
 );
 
-// ========== START ==========
-applyTheme('studio-hell'); // Startet mit hellem Hintergrund
+// Start
+applyTheme('studio-hell');
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  // Nur auto-framen, wenn der Nutzer noch nicht selbst gezoomt hat
+  if (!userHasZoomed) frameModel();
 });
 
 function animate() {
