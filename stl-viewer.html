@@ -78,6 +78,15 @@
     word-break: break-all;
   }
   body.light .info-value { color: var(--text-dark); }
+  .dim-legend {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  body.light .dim-legend { color: var(--muted-dark); }
 
   /* Settings-Toggle (Zahnrad-Button, immer sichtbar) */
   .settings-toggle {
@@ -838,7 +847,10 @@ loader.load(
     grid.position.y = -size.y / 2;
 
     const triangles = geometry.attributes.position.count / 3;
-    statsEl.textContent = `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm`;
+    statsEl.innerHTML = `
+      L ${size.x.toFixed(1)} × B ${size.z.toFixed(1)} × H ${size.y.toFixed(1)} mm
+      <span class="dim-legend">L = Länge · B = Breite · H = Höhe</span>
+    `;
     loadingEl.classList.add('hidden');
 
     document.querySelectorAll('.color-swatch')[0].classList.add('active');
