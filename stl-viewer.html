@@ -220,12 +220,10 @@
     <div class="slider-row">
       <label>Helligkeit</label>
       <input type="range" id="exposure-slider" min="0.3" max="2.5" step="0.05" value="1.0">
-      <span class="value" id="exposure-value">1.0</span>
     </div>
     <div class="slider-row">
       <label>Schatten</label>
       <input type="range" id="shadow-slider" min="0" max="1" step="0.05" value="0.4">
-      <span class="value" id="shadow-value">0.4</span>
     </div>
   </div>
 </div>
@@ -423,9 +421,7 @@ function applyTheme(key) {
 
   // Slider-UI mit den neuen Werten synchronisieren
   exposureSlider.value = t.exposure;
-  exposureValue.textContent = t.exposure.toFixed(2);
   shadowSlider.value = t.shadowOpacity;
-  shadowValue.textContent = t.shadowOpacity.toFixed(2);
 
   // Active-State in UI
   document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -446,20 +442,14 @@ Object.entries(themes).forEach(([key, t]) => {
 
 // Slider-Referenzen
 const exposureSlider = document.getElementById('exposure-slider');
-const exposureValue = document.getElementById('exposure-value');
 const shadowSlider = document.getElementById('shadow-slider');
-const shadowValue = document.getElementById('shadow-value');
 
 exposureSlider.addEventListener('input', (e) => {
-  const v = parseFloat(e.target.value);
-  renderer.toneMappingExposure = v;
-  exposureValue.textContent = v.toFixed(2);
+  renderer.toneMappingExposure = parseFloat(e.target.value);
 });
 
 shadowSlider.addEventListener('input', (e) => {
-  const v = parseFloat(e.target.value);
-  groundMat.opacity = v;
-  shadowValue.textContent = v.toFixed(2);
+  groundMat.opacity = parseFloat(e.target.value);
 });
 
 // ========== FARB-UMSCHALTUNG ==========
