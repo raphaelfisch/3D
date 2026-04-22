@@ -178,6 +178,18 @@
     </div>
   </a>
 
+  <a href="platonische-koerper/index.html" class="card">
+    <div class="card-thumb" data-thumb="platonic"></div>
+    <div class="card-body">
+      <h2>Platonische Körper</h2>
+      <span class="card-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </span>
+    </div>
+  </a>
+
   <a href="3D-viewer.html" class="card">
     <div class="card-thumb" data-thumb="viewer"></div>
     <div class="card-body">
@@ -266,7 +278,6 @@ function createThumbnail(container, type) {
       const center = bbox.getCenter(new THREE.Vector3());
       geometry.translate(-center.x, -center.y, -center.z);
 
-      // Auf Thumbnail-Grösse skalieren (Zielhöhe ca. 3 Einheiten)
       const size = bbox.getSize(new THREE.Vector3());
       const scale = 3 / Math.max(size.x, size.y, size.z);
       geometry.scale(scale, scale, scale);
@@ -275,23 +286,58 @@ function createThumbnail(container, type) {
       group.add(mesh);
     });
 
+  } else if (type === 'platonic') {
+    // Alle fünf platonischen Körper rotierend nebeneinander
+    const solids = [
+      new THREE.TetrahedronGeometry(0.55),
+      new THREE.BoxGeometry(0.85, 0.85, 0.85),
+      new THREE.OctahedronGeometry(0.6),
+      new THREE.DodecahedronGeometry(0.55),
+      new THREE.IcosahedronGeometry(0.55)
+    ];
+    const spacing = 1.45;
+    const startX = -spacing * 2;
+
+    solids.forEach((geo, i) => {
+      const subGroup = new THREE.Group();
+      const mesh = new THREE.Mesh(geo, material);
+      subGroup.add(mesh);
+      const edges = new THREE.EdgesGeometry(geo);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.3
+      });
+      subGroup.add(new THREE.LineSegments(edges, lineMat));
+      subGroup.position.x = startX + i * spacing;
+      subGroup.userData.phase = i * 0.7;
+      group.add(subGroup);
+    });
+
+    // Kamera etwas weiter weg für die Reihe
+    camera.position.set(0, 1.5, 7);
+    camera.lookAt(0, 0, 0);
+
   } else if (type === 'viewer') {
-    // Kristalliner Polyeder mit Wireframe-Overlay
-    const geo = new THREE.IcosahedronGeometry(1.2, 0);
+    // Torusknoten – klar nicht-platonisch, organisch-komplex
+    const geo = new THREE.TorusKnotGeometry(0.85, 0.3, 128, 24);
     const mesh = new THREE.Mesh(geo, material);
     group.add(mesh);
-
-    const edges = new THREE.EdgesGeometry(geo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
-    const wire = new THREE.LineSegments(edges, lineMat);
-    group.add(wire);
   }
 
   scene.add(group);
 
   function animate() {
     requestAnimationFrame(animate);
-    group.rotation.y += 0.005;
+    const speed = 0.005;
+    if (type === 'platonic') {
+      // Alle fünf Körper rotieren mit gleicher Geschwindigkeit,
+      // phasenversetzte Kippbewegung bleibt für visuelles Leben
+      group.children.forEach((child) => {
+        child.rotation.y += speed;
+        child.rotation.x = Math.sin(Date.now() * 0.0005 + child.userData.phase) * 0.3;
+      });
+    } else {
+      group.rotation.y += speed;
+    }
     renderer.render(scene, camera);
   }
   animate();
