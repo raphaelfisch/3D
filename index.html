@@ -342,7 +342,7 @@ function createThumbnail(container, type) {
   }
   animate();
 
-  new ResizeObserver(resize).observe(container);
+  new ResizeObserver(() => requestAnimationFrame(resize)).observe(container);
 }
 
 document.querySelectorAll('[data-thumb]').forEach(el => {
