@@ -12,7 +12,7 @@
     try { return localStorage.getItem(STORAGE_KEY); }
     catch (e) { return null; }
   })();
-  const initialTheme = saved || 'dark';
+  const initialTheme = saved || 'light';
 
   // Anti-Flicker: Theme sofort auf <html> anwenden, später auf <body> spiegeln.
   // Wir fügen eine temporäre Style-Regel ein, die <html>.light-early auf die
