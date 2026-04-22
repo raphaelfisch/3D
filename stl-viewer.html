@@ -56,18 +56,28 @@
     transition: background 0.3s, border-color 0.3s;
   }
 
-  #info-panel {
-    top: 16px; left: 16px;
-    max-width: 260px;
+  #info-panel { display: none; }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 4px 0;
+    font-size: 12px;
+    gap: 12px;
   }
-  #info-panel h1 {
-    font-size: 11px; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 8px;
+  .info-label {
+    color: var(--muted);
+    flex-shrink: 0;
   }
-  #info-panel .filename { font-size: 14px; font-weight: 500; margin-bottom: 4px; word-break: break-all; }
-  #info-panel .stats { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  body.light .info-label { color: var(--muted-dark); }
+  .info-value {
+    color: var(--text);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+  }
+  body.light .info-value { color: var(--text-dark); }
 
   /* Settings-Toggle (Zahnrad-Button, immer sichtbar) */
   .settings-toggle {
@@ -298,14 +308,6 @@
 
   /* ============ MOBILE ============ */
   @media (max-width: 700px) {
-    #info-panel {
-      top: 12px; left: 12px; right: 140px;
-      max-width: unset;
-      padding: 12px 16px;
-    }
-    #info-panel .filename { font-size: 13px; }
-    #info-panel .stats { font-size: 11px; }
-
     .settings-toggle {
       top: 12px; right: 12px;
       width: 52px; height: 52px;
@@ -370,11 +372,6 @@
 
 <div id="canvas-container"></div>
 
-<div class="panel" id="info-panel">
-  <div class="filename" id="filename">Wird geladen…</div>
-  <div class="stats muted-text" id="stats">Wird geladen…</div>
-</div>
-
 <button class="settings-toggle" id="reset-view" aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">⌂</button>
 <button class="settings-toggle" id="settings-toggle" aria-label="Einstellungen öffnen">⚙</button>
 <div class="overlay" id="overlay"></div>
@@ -402,6 +399,11 @@
       <label>Schatten</label>
       <input type="range" id="shadow-slider" min="0" max="1" step="0.05" value="0.4">
     </div>
+  </div>
+  <div class="settings-section">
+    <h2>Modell</h2>
+    <div class="info-item"><span class="info-label">Datei</span><span class="info-value" id="filename">–</span></div>
+    <div class="info-item"><span class="info-label">Grösse</span><span class="info-value" id="stats">–</span></div>
   </div>
 </div>
 
