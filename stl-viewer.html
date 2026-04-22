@@ -313,23 +313,42 @@
       top: auto;
       bottom: 0; left: 0; right: 0;
       width: 100%;
-      max-height: 75vh;
+      max-height: none;
+      overflow-y: visible;
       border-radius: 18px 18px 0 0;
       transform: translateY(0);
       transform-origin: bottom center;
-      padding: 20px 20px 28px;
+      padding: 14px 16px 18px;
     }
     #settings-panel.hidden {
       transform: translateY(100%);
       opacity: 1;
     }
 
-    .theme-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .theme-btn { padding: 14px 16px; font-size: 14px; min-height: 52px; }
+    .settings-header {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+    }
+    .settings-header h3 { font-size: 13px; }
 
-    .color-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
-    .color-swatch { border-radius: 12px; min-height: 52px; }
+    .settings-section { margin-bottom: 12px; }
+    .settings-section h2 { margin-bottom: 6px; font-size: 9px; }
 
+    .theme-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .theme-btn { padding: 8px 6px; font-size: 11px; min-height: 36px; text-align: center; }
+
+    .color-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .color-swatch { border-radius: 8px; min-height: 0; }
+
+    .slider-row { margin-bottom: 6px; gap: 10px; }
+    .slider-row label { font-size: 11px; min-width: 60px; }
+    .slider-row input[type="range"] { margin: 8px 0; }
+
+    .loading { font-size: 13px; }
+  }
+
+  /* Touch-Geräte: statt Maus-Hinweisen die Touch-Hinweise zeigen */
+  @media (hover: none) and (pointer: coarse) {
     #controls-desktop { display: none; }
     #controls-mobile {
       display: grid;
@@ -339,7 +358,6 @@
     }
     #controls-mobile .label { font-size: 9px; }
     #controls-mobile .value { font-size: 11px; }
-    .loading { font-size: 13px; }
   }
 </style>
 </head>
