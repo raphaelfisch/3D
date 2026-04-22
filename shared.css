@@ -1,0 +1,223 @@
+/* ================================================================
+   3D-Werkstatt · shared.css
+   Zentrale Design-Sprache für alle Seiten.
+   Änderungen hier wirken sich auf alle Seiten aus.
+   ================================================================ */
+
+/* -------- Design-Tokens: Farben, Abstände, Radien -------- */
+:root {
+  /* Akzent (gleich in beiden Themes) */
+  --accent: #7dd3c0;
+  --accent-dim: rgba(125, 211, 192, 0.15);
+  --accent-border: rgba(125, 211, 192, 0.3);
+
+  /* Dunkel (Default) */
+  --bg-base: #0a0d12;
+  --bg-grad-1: rgba(125, 211, 192, 0.08);
+  --bg-grad-2: rgba(100, 150, 220, 0.06);
+  --bg-grad-3-start: #1a2030;
+  --bg-grad-3-end: #0a0d12;
+  --panel: rgba(255,255,255,0.06);
+  --panel-strong: rgba(255,255,255,0.08);
+  --border: rgba(255,255,255,0.12);
+  --border-strong: rgba(255,255,255,0.15);
+  --text: #f0f0f0;
+  --text-dim: #c8d2de;
+  --muted: #8a9199;
+  --card-grad-start: #1a2030;
+  --card-grad-end: #0f141a;
+}
+
+/* -------- Hell-Theme -------- */
+body.light {
+  --bg-base: #f5f7fa;
+  --bg-grad-1: rgba(125, 211, 192, 0.12);
+  --bg-grad-2: rgba(100, 150, 220, 0.08);
+  --bg-grad-3-start: #e4e9f0;
+  --bg-grad-3-end: #f5f7fa;
+  --panel: rgba(255,255,255,0.65);
+  --panel-strong: rgba(255,255,255,0.85);
+  --border: rgba(0,0,0,0.1);
+  --border-strong: rgba(0,0,0,0.15);
+  --text: #1a1a1a;
+  --text-dim: #404854;
+  --muted: #5a6066;
+  --card-grad-start: #edf0f4;
+  --card-grad-end: #dde3eb;
+}
+
+/* -------- Reset + Basis -------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html { scroll-behavior: smooth; }
+body {
+  min-height: 100vh;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse at top left, var(--bg-grad-1), transparent 50%),
+    radial-gradient(ellipse at bottom right, var(--bg-grad-2), transparent 50%),
+    linear-gradient(180deg, var(--bg-grad-3-start) 0%, var(--bg-grad-3-end) 60%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Während Theme-Wechsel Transitions unterbinden (flackerfrei) */
+body.resizing *, body.resizing *::before, body.resizing *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* -------- Hero (gross, zentriert) -------- */
+.hero {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 80px 32px 40px;
+  text-align: center;
+}
+.eyebrow {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.hero h1 {
+  font-size: clamp(40px, 7vw, 72px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, var(--text) 0%, var(--text-dim) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero p {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Hero-Variante für Detailseiten (etwas kompakter) */
+.hero.compact { padding: 40px 32px 20px; }
+.hero.compact h1 { font-size: clamp(36px, 6vw, 60px); }
+.hero.compact p { font-size: 16px; max-width: 620px; }
+
+/* -------- Glassmorphism-Panel (Basiskomponente) -------- */
+.panel {
+  background: var(--panel);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+/* -------- Back-Link (Top-Left auf Unterseiten) -------- */
+.back-link {
+  position: fixed;
+  top: 16px; left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--panel);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  z-index: 20;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.back-link:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.back-link svg { width: 14px; height: 14px; }
+
+/* Scroll-Variante: Back-Link fliesst mit statt fixed (für lange Seiten) */
+.back-link.flow {
+  position: static;
+  margin: 24px 0 0 32px;
+}
+
+/* -------- Theme-Toggle (Hell/Dunkel, Top-Right) -------- */
+.theme-toggle {
+  position: fixed;
+  top: 16px; right: 16px;
+  width: 44px; height: 44px;
+  background: var(--panel);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.theme-toggle:hover {
+  border-color: var(--accent-border);
+  transform: scale(1.05);
+}
+.theme-toggle svg { width: 18px; height: 18px; }
+/* Icon-Wechsel je nach Theme */
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+body.light .theme-toggle .icon-sun { display: block; }
+body.light .theme-toggle .icon-moon { display: none; }
+
+/* -------- Footer -------- */
+.footer {
+  text-align: center;
+  padding: 40px 32px 60px;
+  color: var(--muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* Copyright-Zeile für Vollbild-Seiten (in einem Settings-Panel) */
+.copyright-line {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* -------- Mobile-Anpassungen -------- */
+@media (max-width: 640px) {
+  .hero { padding: 72px 20px 32px; }
+  .hero h1 { font-size: 38px; }
+  .hero p { font-size: 15px; }
+  .hero.compact { padding: 56px 20px 16px; }
+  .hero.compact h1 { font-size: 34px; }
+
+  .back-link { top: 12px; left: 12px; padding: 8px 12px; font-size: 12px; }
+  .theme-toggle { top: 12px; right: 12px; width: 40px; height: 40px; }
+}
