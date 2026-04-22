@@ -160,6 +160,10 @@ filenameEl.textContent = STL_URL.split('/').pop();
 loader.load(
   STL_URL,
   (geometry) => {
+    // Tinkercad verwendet Z-up, Three.js verwendet Y-up
+    // Rotation um -90° um X-Achse korrigiert die Orientierung
+    geometry.rotateX(-Math.PI / 2);
+
     geometry.computeBoundingBox();
     geometry.computeVertexNormals();
 
