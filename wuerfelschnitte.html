@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Würfelschnitte · 3D-Werkstatt</title>
+<link rel="stylesheet" href="shared.css">
+<script src="shared.js" defer></script>
+<style>
+  .grid {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 40px 32px 40px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 1200px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px)  { .grid { grid-template-columns: 1fr; padding: 24px 20px; gap: 16px; } }
+
+  .cut-card {
+    position: relative;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cut-viewer {
+    aspect-ratio: 1 / 1;
+    position: relative;
+    background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .cut-viewer canvas { width: 100%; height: 100%; display: block; }
+
+  .cut-label {
+    position: absolute;
+    top: 12px; left: 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(10, 13, 18, 0.5);
+    padding: 4px 10px;
+    border-radius: 100px;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+  }
+  body.light .cut-label {
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  .cut-hint {
+    position: absolute;
+    bottom: 12px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 100px;
+    pointer-events: none;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .cut-card.exploded .cut-hint::before { content: 'Klick: zusammen'; }
+  .cut-card:not(.exploded) .cut-hint::before { content: 'Klick: teilen'; }
+
+  .cut-body {
+    padding: 18px 20px 20px;
+  }
+  .cut-name {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+  }
+  .cut-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Info-Button (oben rechts, links neben Theme-Toggle) */
+  .info-btn {
+    position: fixed;
+    top: 16px; right: 70px;
+    width: 40px; height: 40px;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 70;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s, color 0.2s;
+  }
+  .info-btn:hover {
+    border-color: var(--accent-border);
+    color: var(--accent);
+    transform: scale(1.05);
+  }
+  .info-btn svg { width: 18px; height: 18px; }
+
+  @media (max-width: 640px) {
+    .info-btn { top: 12px; right: 60px; width: 36px; height: 36px; }
+  }
+
+  /* Info-Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 7, 12, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  body.light .modal-overlay { background: rgba(240, 243, 247, 0.85); }
+  .modal-overlay.active { display: flex; opacity: 1; }
+
+  .info-modal-content {
+    position: relative;
+    width: min(90vw, 640px);
+    max-height: 90vh;
+    background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow-y: auto;
+    padding: 40px 36px 36px;
+    transform: scale(0.96);
+    transition: transform 0.25s ease;
+  }
+  .modal-overlay.active .info-modal-content { transform: scale(1); }
+  .info-modal-content h2 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 16px;
+  }
+  .info-modal-content p {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+  .info-modal-content p:last-child { margin-bottom: 0; }
+  .info-modal-content strong { color: var(--text); font-weight: 600; }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .modal-close:hover { border-color: var(--accent-border); }
+  .modal-close svg { width: 16px; height: 16px; }
+
+  @media (max-width: 640px) {
+    .info-modal-content { padding: 32px 24px 24px; }
+    .info-modal-content h2 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Back-Link (oben links) -->
+<a href="index.html" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M19 12H5M11 18l-6-6 6-6"/>
+  </svg>
+  Werkstatt
+</a>
+
+<!-- Info-Button (oben rechts) -->
+<button class="info-btn" id="infoBtn" aria-label="Mehr Informationen">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="12" y1="16" x2="12" y2="12"/>
+    <line x1="12" y1="8" x2="12.01" y2="8"/>
+  </svg>
+</button>
+
+<!-- Theme-Toggle (oben rechts) -->
+<button class="theme-toggle" data-theme-toggle aria-label="Hell/Dunkel umschalten">
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </svg>
+</button>
+
+<section class="hero compact">
+  <span class="eyebrow">Nach Max Bill</span>
+  <h1>Würfelschnitte</h1>
+  <p>Ein Würfel, auf vier verschiedene Arten geteilt – und jedes Mal entstehen zwei kongruente Teile.<br>Klicke auf einen Würfel, um ihn aufzutrennen.</p>
+</section>
+
+<div class="grid" id="grid">
+
+  <div class="cut-card" data-cut="AC">
+    <div class="cut-viewer">
+      <span class="cut-label">A · C</span>
+      <span class="cut-hint"></span>
+    </div>
+    <div class="cut-body">
+      <div class="cut-name">Schnitt I</div>
+      <div class="cut-desc">Treppenförmiger Schnitt durch den Würfel.</div>
+    </div>
+  </div>
+
+  <div class="cut-card" data-cut="BD">
+    <div class="cut-viewer">
+      <span class="cut-label">B · D</span>
+      <span class="cut-hint"></span>
+    </div>
+    <div class="cut-body">
+      <div class="cut-name">Schnitt II</div>
+      <div class="cut-desc">Diagonalschnitt – zwei dreiseitige Prismen.</div>
+    </div>
+  </div>
+
+  <div class="cut-card" data-cut="EG">
+    <div class="cut-viewer">
+      <span class="cut-label">E · G</span>
+      <span class="cut-hint"></span>
+    </div>
+    <div class="cut-body">
+      <div class="cut-name">Schnitt III</div>
+      <div class="cut-desc">Horizontaler Mittelschnitt – zwei Quader.</div>
+    </div>
+  </div>
+
+  <div class="cut-card" data-cut="FH">
+    <div class="cut-viewer">
+      <span class="cut-label">F · H</span>
+      <span class="cut-hint"></span>
+    </div>
+    <div class="cut-body">
+      <div class="cut-name">Schnitt IV</div>
+      <div class="cut-desc">Zusammengesetzter Schnitt mit schräger Fläche.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  © Raphael Fisch 2026
+</footer>
+
+<!-- Info-Modal -->
+<div class="modal-overlay" id="infoModal">
+  <div class="info-modal-content">
+    <button class="modal-close" id="infoModalClose" aria-label="Schliessen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+    <h2>Würfelschnitte nach Max Bill</h2>
+    <p>Max Bill (1908–1994), Schweizer Künstler und Architekt der Konkreten Kunst, zeigte, dass sich ein Würfel auf überraschend viele Arten in <strong>zwei deckungsgleiche</strong> Teile zerschneiden lässt.</p>
+    <p>Alle hier gezeigten Schnitte haben eine gemeinsame Eigenschaft: Die zwei Teile sind <strong>punktsymmetrisch zum Würfelmittelpunkt</strong>. Dreht man ein Teil durch den Mittelpunkt und stellt es wieder zusammen, passt es nahtlos als Gegenstück.</p>
+    <p>Vom einfachen Mittelschnitt bis zum treppenförmigen Schnitt – das Prinzip bleibt gleich, die Formen werden spielerischer. Ein Beispiel dafür, wie strenge Geometrie zu überraschenden Resultaten führt.</p>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const CUTS = {
+  AC: { file: 'AC.stl' },
+  BD: { file: 'BD.stl' },
+  EG: { file: 'EG.stl' },
+  FH: { file: 'FH.stl' }
+};
+
+// Shared environment
+let sharedEnvTexture = null;
+function getEnvironmentTexture(renderer) {
+  if (!sharedEnvTexture) {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    sharedEnvTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  }
+  return sharedEnvTexture;
+}
+
+// STL-Geometrien werden nur einmal geladen und wiederverwendet
+const loader = new STLLoader();
+const geometryCache = new Map();
+
+function loadGeometry(file) {
+  if (geometryCache.has(file)) return Promise.resolve(geometryCache.get(file));
+  return new Promise((resolve, reject) => {
+    loader.load(file, (geom) => {
+      geom.computeVertexNormals();
+      geometryCache.set(file, geom);
+      resolve(geom);
+    }, undefined, reject);
+  });
+}
+
+// Würfel-Mittelpunkt: (5, 5, 5), da die STLs in [0,0,0]..[10,10,10] liegen.
+// Die zwei Teile sind punktsymmetrisch zu diesem Punkt.
+const CUBE_CENTER = new THREE.Vector3(5, 5, 5);
+
+function createCutViewer(container, cutName) {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
+  // Die STLs sind in Würfelkoordinaten [0..10], wir stellen die Kamera
+  // passend dazu ein
+  camera.position.set(20, 16, 24);
+  camera.lookAt(CUBE_CENTER);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  const resize = () => {
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0) return;
+    renderer.setSize(rect.width, rect.height, false);
+    camera.aspect = rect.width / rect.height;
+    camera.updateProjectionMatrix();
+  };
+  container.appendChild(renderer.domElement);
+  resize();
+
+  scene.environment = getEnvironmentTexture(renderer);
+
+  const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.4);
+  keyLight.position.set(3, 5, 3);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.4);
+  fillLight.position.set(-3, 2, -2);
+  scene.add(fillLight);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+  scene.add(ambient);
+
+  // Materialien: beide Teile leicht unterschiedlich (Grün und Blaugrau),
+  // damit die Teilung gut sichtbar ist, aber beide gehören visuell zusammen.
+  const mat1 = new THREE.MeshStandardMaterial({
+    color: 0x5a9a6c, metalness: 0.15, roughness: 0.45, envMapIntensity: 1.2
+  });
+  const mat2 = new THREE.MeshStandardMaterial({
+    color: 0xb8c5cc, metalness: 0.25, roughness: 0.4, envMapIntensity: 1.2
+  });
+
+  // Rotationsgruppe, um den Gesamtwürfel dreht sich
+  const rotationGroup = new THREE.Group();
+  scene.add(rotationGroup);
+
+  // Zentrierende Gruppe: verschiebt den Würfel, sodass Mittelpunkt im Ursprung liegt
+  const centeredGroup = new THREE.Group();
+  centeredGroup.position.set(-5, -5, -5);
+  rotationGroup.add(centeredGroup);
+
+  // Container-Gruppen für die zwei Teile (wir animieren deren Position)
+  const part1Group = new THREE.Group();
+  const part2Group = new THREE.Group();
+  centeredGroup.add(part1Group);
+  centeredGroup.add(part2Group);
+
+  // Explosions-Bewegung ist in Richtung des Schwerpunkts des jeweiligen Teils
+  // (vom Würfelzentrum aus gesehen). Wird nach dem Laden gesetzt.
+  let explosionDir1 = new THREE.Vector3(1, 0, 0);
+  let explosionDir2 = new THREE.Vector3(-1, 0, 0);
+  const EXPLOSION_DIST = 4; // Einheiten
+
+  // Edges-Overlay für klare Kanten
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.3
+  });
+  const applyThemeToLines = (theme) => {
+    lineMat.color.set(theme === 'light' ? 0x1a2030 : 0xffffff);
+    lineMat.opacity = theme === 'light' ? 0.35 : 0.25;
+  };
+  applyThemeToLines(window.WerkstattTheme?.get() || 'light');
+  window.WerkstattTheme?.onChange(applyThemeToLines);
+
+  // Geometrie laden
+  loadGeometry(CUTS[cutName].file).then((geom) => {
+    // Teil 1: Original
+    const mesh1 = new THREE.Mesh(geom, mat1);
+    part1Group.add(mesh1);
+    const edges1 = new THREE.EdgesGeometry(geom, 20);
+    part1Group.add(new THREE.LineSegments(edges1, lineMat));
+
+    // Teil 2: Punktspiegelung am Würfelmittelpunkt (5,5,5).
+    // Wir erzeugen eine gespiegelte Kopie der Geometrie mit korrekter
+    // Dreiecks-Orientierung (Winding-Order umdrehen, damit Normalen stimmen).
+    const mirroredGeom = mirrorGeometryAtPoint(geom, CUBE_CENTER);
+    const mesh2 = new THREE.Mesh(mirroredGeom, mat2);
+    part2Group.add(mesh2);
+    const edges2 = new THREE.EdgesGeometry(mirroredGeom, 20);
+    part2Group.add(new THREE.LineSegments(edges2, lineMat));
+
+    // Richtungen berechnen: Schwerpunkt jedes Teils im Würfel-Koordinatensystem
+    // relativ zum Würfelmittelpunkt. Wir nehmen die Geometrie-Bbox als Näherung.
+    geom.computeBoundingBox();
+    const bbox = geom.boundingBox;
+    const center1 = bbox.getCenter(new THREE.Vector3());
+    const dir1 = center1.clone().sub(CUBE_CENTER).normalize();
+    // Teil 2 hat durch Punktspiegelung den gegenüberliegenden Schwerpunkt
+    explosionDir1.copy(dir1);
+    explosionDir2.copy(dir1).negate();
+
+    // Falls dir1 ≈ 0 (seltener Fall), fallback auf Y-Achse
+    if (explosionDir1.length() < 0.01) {
+      explosionDir1.set(0, 1, 0);
+      explosionDir2.set(0, -1, 0);
+    }
+  });
+
+  // Hilfsfunktion: Geometrie am Punkt p punktspiegeln und Dreiecke korrekt orientieren
+  function mirrorGeometryAtPoint(sourceGeom, p) {
+    const g = sourceGeom.clone();
+    const pos = g.attributes.position;
+    // Vertices spiegeln: v' = 2*p - v
+    for (let i = 0; i < pos.count; i++) {
+      pos.setXYZ(i, 2*p.x - pos.getX(i), 2*p.y - pos.getY(i), 2*p.z - pos.getZ(i));
+    }
+    pos.needsUpdate = true;
+    // Dreiecks-Orientierung umdrehen (Vertices 1 und 2 tauschen pro Triangle)
+    // Bei nicht-indizierter Geometrie einfach jedes Dreieck neu anordnen.
+    const arr = pos.array;
+    for (let i = 0; i < pos.count; i += 3) {
+      // Tausche Vertex 1 (i+1) und Vertex 2 (i+2)
+      const o1 = (i+1) * 3;
+      const o2 = (i+2) * 3;
+      for (let k = 0; k < 3; k++) {
+        const t = arr[o1+k]; arr[o1+k] = arr[o2+k]; arr[o2+k] = t;
+      }
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+
+  // Animations-State
+  let exploded = 0;       // aktuelle Position (0 = zusammen, 1 = auseinander)
+  let targetExploded = 0; // Zielwert
+
+  // Klick-Handler
+  container.addEventListener('click', (e) => {
+    targetExploded = targetExploded > 0.5 ? 0 : 1;
+    container.parentElement.classList.toggle('exploded', targetExploded > 0.5);
+  });
+
+  let running = true;
+  function animate() {
+    if (!running) return;
+    requestAnimationFrame(animate);
+
+    // Sanfte Interpolation zum Ziel-Explosionsgrad
+    exploded += (targetExploded - exploded) * 0.12;
+
+    // Teile verschieben
+    part1Group.position.copy(explosionDir1).multiplyScalar(exploded * EXPLOSION_DIST);
+    part2Group.position.copy(explosionDir2).multiplyScalar(exploded * EXPLOSION_DIST);
+
+    // Langsame Rotation des ganzen Würfels
+    rotationGroup.rotation.y += 0.004;
+    rotationGroup.rotation.x = Math.sin(Date.now() * 0.0003) * 0.12;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  const resizeObs = new ResizeObserver(() => requestAnimationFrame(resize));
+  resizeObs.observe(container);
+
+  return {
+    dispose() {
+      running = false;
+      resizeObs.disconnect();
+      renderer.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+    }
+  };
+}
+
+// Alle vier Karten initialisieren
+document.querySelectorAll('[data-cut]').forEach(card => {
+  const viewer = card.querySelector('.cut-viewer');
+  const cutName = card.dataset.cut;
+  createCutViewer(viewer, cutName);
+});
+
+// Info-Modal
+const infoBtn = document.getElementById('infoBtn');
+const infoModal = document.getElementById('infoModal');
+const infoModalClose = document.getElementById('infoModalClose');
+
+function openInfoModal() {
+  infoModal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeInfoModal() {
+  infoModal.classList.remove('active');
+  document.body.style.overflow = '';
+}
+infoBtn.addEventListener('click', openInfoModal);
+infoModalClose.addEventListener('click', closeInfoModal);
+infoModal.addEventListener('click', (e) => {
+  if (e.target === infoModal) closeInfoModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && infoModal.classList.contains('active')) closeInfoModal();
+});
+</script>
+
+</body>
+</html>
