@@ -279,6 +279,7 @@
     z-index: 50;
     background: transparent;
     padding: 20px;
+    pointer-events: none; /* Klicks gehen durch, ausser auf .drop-area */
   }
   .dropzone.hidden { display: none; }
   .dropzone.drag-active .drop-area {
@@ -287,6 +288,7 @@
     transform: scale(1.02);
   }
   .drop-area {
+    pointer-events: auto; /* Klicks hier werden wieder aufgefangen */
     max-width: 440px;
     width: 100%;
     padding: 40px 36px;
