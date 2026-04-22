@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D-Viewer</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.12);
+    --text: #e8e8e8;
+    --muted: #8a9199;
+    --accent: #7dd3c0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; overflow:hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  #canvas-container { position: fixed; inset: 0; }
+  canvas { display:block; }
+
+  .panel {
+    position: fixed; top: 20px; left: 20px;
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 22px;
+    min-width: 240px;
+  }
+  .panel h1 {
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .panel .filename { font-size: 15px; font-weight: 500; margin-bottom: 6px; word-break: break-all; }
+  .panel .stats { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  .controls {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex; gap: 16px;
+    font-size: 12px; color: var(--muted);
+  }
+  .controls span strong { color: var(--text); font-weight: 600; }
+
+  .loading {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--muted);
+    pointer-events: none;
+  }
+  .loading.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div class="panel">
+  <h1>3D-Modell</h1>
+  <div class="filename" id="filename">viertelkugel.stl</div>
+  <div class="stats" id="stats">Wird geladen…</div>
+</div>
+
+<div class="controls">
+  <span><strong>Drehen:</strong> linke Maustaste</span>
+  <span><strong>Zoom:</strong> Mausrad</span>
+  <span><strong>Verschieben:</strong> rechte Maustaste</span>
+</div>
+
+<div class="loading" id="loading">Lade Modell…</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ========== HIER DEINE STL-DATEI EINTRAGEN ==========
+const STL_URL = 'viertelkugel.stl';
+// ====================================================
+
+const container = document.getElementById('canvas-container');
+
+// Szene
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0f1419);
+
+// Kamera
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+camera.position.set(150, 120, 200);
+
+// Renderer
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+// Licht
+const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambient);
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+keyLight.position.set(100, 200, 100);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.left = -200;
+keyLight.shadow.camera.right = 200;
+keyLight.shadow.camera.top = 200;
+keyLight.shadow.camera.bottom = -200;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.3);
+fillLight.position.set(-100, 50, -100);
+scene.add(fillLight);
+
+// Bodenebene
+const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+const groundMat = new THREE.ShadowMaterial({ opacity: 0.25 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Gitter (dezent)
+const grid = new THREE.GridHelper(400, 20, 0x2a3138, 0x1a1f24);
+scene.add(grid);
+
+// Steuerung
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+// STL laden
+const loader = new STLLoader();
+const loadingEl = document.getElementById('loading');
+const statsEl = document.getElementById('stats');
+const filenameEl = document.getElementById('filename');
+
+filenameEl.textContent = STL_URL.split('/').pop();
+
+loader.load(
+  STL_URL,
+  (geometry) => {
+    geometry.computeBoundingBox();
+    geometry.computeVertexNormals();
+
+    // Zentrieren
+    const bbox = geometry.boundingBox;
+    const center = bbox.getCenter(new THREE.Vector3());
+    geometry.translate(-center.x, -bbox.min.y, -center.z);
+
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x7dd3c0,
+      metalness: 0.1,
+      roughness: 0.4,
+      flatShading: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+
+    // Kamera automatisch positionieren
+    const size = bbox.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const dist = maxDim * 2.2;
+    camera.position.set(dist, dist * 0.7, dist);
+    controls.target.set(0, size.y / 2, 0);
+    controls.update();
+
+    // Ground unter das Objekt legen
+    ground.position.y = 0;
+    grid.position.y = 0;
+
+    // Stats anzeigen
+    const triangles = geometry.attributes.position.count / 3;
+    statsEl.innerHTML = `
+      Dreiecke: ${triangles.toLocaleString('de-CH')}<br>
+      Grösse: ${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)} mm
+    `;
+    loadingEl.classList.add('hidden');
+  },
+  (xhr) => {
+    if (xhr.lengthComputable) {
+      const pct = Math.round((xhr.loaded / xhr.total) * 100);
+      loadingEl.textContent = `Lade Modell… ${pct}%`;
+    }
+  },
+  (error) => {
+    loadingEl.textContent = 'Fehler beim Laden: ' + STL_URL;
+    statsEl.textContent = 'Datei nicht gefunden oder kein Webserver.';
+    console.error(error);
+  }
+);
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Animate
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+
+</body>
+</html>
