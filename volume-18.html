@@ -3,126 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Volume 18</title>
+<title>Volume 18 · 3D-Werkstatt</title>
+<link rel="stylesheet" href="shared.css">
 <style>
-  :root {
-    --panel: rgba(255,255,255,0.08);
-    --panel-dark: rgba(0,0,0,0.1);
-    --border: rgba(255,255,255,0.15);
-    --border-dark: rgba(0,0,0,0.15);
-    --text: #f0f0f0;
-    --text-dark: #1a1a1a;
-    --muted: #8a9199;
-    --muted-dark: #5a6066;
-    --accent: #7dd3c0;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  /* Vollbild-Viewer: Body fixiert, kein Scrollen */
   html, body {
-    height:100%; overflow:hidden;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    color: var(--text);
-    transition: color 0.3s;
+    height: 100%;
+    overflow: hidden;
     overscroll-behavior: none;
   }
-  body.light { color: var(--text-dark); }
-  body.light .panel { background: var(--panel-dark); border-color: var(--border-dark); }
-  body.light .muted-text { color: var(--muted-dark); }
-  body.light .theme-btn { color: var(--text-dark); border-color: var(--border-dark); }
-  body.light .theme-btn:hover { background: rgba(0,0,0,0.06); }
-  body.light .color-swatch { border-color: rgba(0,0,0,0.2); }
-  body.light .settings-toggle { color: var(--text-dark); }
-  body.light .settings-close { color: var(--text-dark); }
-
-  body.resizing *, body.resizing *::before, body.resizing *::after {
-    transition: none !important;
-    animation: none !important;
-  }
+  /* Der shared.css-Hintergrund wird hier durch das 3D-Theme übermalt –
+     das Canvas bedeckt ihn ohnehin vollständig. */
 
   #canvas-container {
     position: fixed; inset: 0;
     touch-action: none;
   }
-  canvas { display:block; touch-action: none; }
+  canvas { display: block; touch-action: none; }
 
-  .panel {
+  /* Floating Action Button (Settings, Reset) – runde Buttons rechts */
+  .fab {
     position: fixed;
+    width: 44px; height: 44px;
     background: var(--panel);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    transition: background 0.3s, border-color 0.3s;
-  }
-
-  #info-panel { display: none; }
-
-  .info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 4px 0;
-    font-size: 12px;
-    gap: 12px;
-  }
-  .info-label {
-    color: var(--muted);
-    flex-shrink: 0;
-  }
-  body.light .info-label { color: var(--muted-dark); }
-  .info-value {
-    color: var(--text);
-    font-weight: 500;
-    text-align: right;
-    word-break: break-all;
-  }
-  body.light .info-value { color: var(--text-dark); }
-  .dim-legend {
-    display: block;
-    font-size: 10px;
-    font-weight: 400;
-    color: var(--muted);
-    margin-top: 3px;
-    letter-spacing: 0.02em;
-  }
-  body.light .dim-legend { color: var(--muted-dark); }
-
-  /* Settings-Toggle (Zahnrad-Button, immer sichtbar) */
-  .settings-toggle {
-    position: fixed;
-    top: 16px; right: 16px;
-    width: 48px; height: 48px;
-    background: var(--panel);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
-    border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: 50%;
     cursor: pointer;
+    color: var(--text);
     display: flex;
     align-items: center; justify-content: center;
-    color: var(--text);
-    font-size: 22px;
-    transition: all 0.2s, opacity 0.2s, transform 0.2s;
+    font-size: 20px;
     z-index: 20;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    transition: background 0.2s, border-color 0.2s, transform 0.2s, opacity 0.2s;
   }
-  body.settings-open .settings-toggle {
+  .fab:hover {
+    border-color: var(--accent-border);
+    transform: scale(1.05);
+  }
+  body.settings-open #settings-toggle {
     opacity: 0;
     transform: scale(0.9);
     pointer-events: none;
   }
-  #reset-view {
-    right: 76px;
-    font-size: 24px;
-  }
-  .settings-toggle:hover, .settings-toggle:active {
-    background: rgba(125, 211, 192, 0.15);
-    border-color: var(--accent);
-  }
+
+  /* Positionen: Theme-Toggle oben rechts (aus shared.css),
+     dann Reset links daneben, Settings-Toggle wiederum links daneben. */
+  #settings-toggle { top: 16px; right: 122px; }
+  #reset-view      { top: 16px; right: 69px; }
 
   /* Overlay hinter dem Panel (Mobile) */
-  .overlay {
+  .overlay-bg {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.3);
     backdrop-filter: blur(2px);
@@ -132,16 +64,24 @@
     pointer-events: none;
     transition: opacity 0.25s;
   }
-  .overlay.visible {
+  .overlay-bg.visible {
     opacity: 1;
     pointer-events: auto;
   }
 
   #settings-panel {
-    top: 16px; right: 16px;
+    position: fixed;
+    top: 72px; right: 16px;
     width: 280px;
-    max-height: calc(100vh - 32px);
+    max-height: calc(100vh - 88px);
     overflow-y: auto;
+    padding: 16px 20px;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
     z-index: 15;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s;
     transform-origin: top right;
@@ -159,7 +99,6 @@
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
   }
-  body.light .settings-header { border-bottom-color: var(--border-dark); }
   .settings-header h3 {
     font-size: 14px; font-weight: 600;
   }
@@ -173,7 +112,7 @@
     padding: 4px 8px;
     border-radius: 6px;
   }
-  .settings-close:hover { background: rgba(255,255,255,0.1); }
+  .settings-close:hover { background: rgba(125, 211, 192, 0.1); }
 
   .settings-section { margin-bottom: 18px; }
   .settings-section:last-child { margin-bottom: 0; }
@@ -203,17 +142,13 @@
     min-height: 44px;
   }
   .theme-btn:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--accent);
+    background: var(--accent-dim);
+    border-color: var(--accent-border);
   }
   .theme-btn.active {
     background: var(--accent);
     color: #0f1419;
     border-color: var(--accent);
-  }
-  body.light .theme-btn.active {
-    background: var(--accent);
-    color: #0f1419;
   }
 
   .color-grid {
@@ -225,14 +160,12 @@
     aspect-ratio: 1;
     border-radius: 10px;
     cursor: pointer;
-    border: 2px solid rgba(255,255,255,0.15);
+    border: 2px solid var(--border-strong);
     transition: all 0.15s;
     position: relative;
     min-height: 36px;
   }
-  .color-swatch:hover {
-    transform: scale(1.1);
-  }
+  .color-swatch:hover { transform: scale(1.1); }
   .color-swatch.active {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px var(--accent);
@@ -247,20 +180,16 @@
     font-size: 12px; font-weight: 500;
     color: var(--muted); min-width: 70px;
   }
-  body.light .slider-row label { color: var(--muted-dark); }
   .slider-row input[type="range"] {
     flex: 1;
     -webkit-appearance: none;
     appearance: none;
     height: 6px;
-    background: rgba(255,255,255,0.15);
+    background: var(--border-strong);
     border-radius: 3px;
     outline: none;
     padding: 0;
     margin: 12px 0;
-  }
-  body.light .slider-row input[type="range"] {
-    background: rgba(0,0,0,0.15);
   }
   .slider-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -280,7 +209,31 @@
     border: 3px solid rgba(255,255,255,0.95);
   }
 
-  .controls {
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 4px 0;
+    font-size: 12px;
+    gap: 12px;
+  }
+  .info-label { color: var(--muted); flex-shrink: 0; }
+  .info-value {
+    color: var(--text);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+  }
+  .dim-legend {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+
+  .controls-hint {
     position: fixed; bottom: 16px; left: 50%;
     transform: translateX(-50%);
     display: grid;
@@ -292,16 +245,20 @@
     padding: 12px 20px;
     text-align: center;
     max-width: calc(100vw - 32px);
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
   }
-  .controls .label {
+  .controls-hint .label {
     font-weight: 600;
     color: var(--text);
     font-size: 10px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-  body.light .controls .label { color: var(--text-dark); }
-  .controls .value {
+  .controls-hint .value {
     font-size: 12px;
     white-space: nowrap;
   }
@@ -315,22 +272,24 @@
   }
   .loading.hidden { display: none; }
 
+  /* Volume-18: Back-Link soll unten links sein, um Top-Rechts-Stack nicht zu überlagern –
+     aber oben links ist frei. Also behalten wir die Standard-Position von shared.css. */
+
   /* ============ MOBILE ============ */
   @media (max-width: 700px) {
-    .settings-toggle {
-      top: 12px; right: 12px;
-      width: 52px; height: 52px;
+    #settings-toggle, #reset-view, .theme-toggle {
+      width: 44px; height: 44px;
     }
-    #reset-view {
-      right: 76px;
-    }
+    /* Auf Mobile: Theme-Toggle bleibt oben rechts, Reset und Settings daneben */
+    #settings-toggle { right: 112px; }
+    #reset-view { right: 62px; }
 
     #settings-panel {
       top: auto;
       bottom: 0; left: 0; right: 0;
       width: 100%;
-      max-height: none;
-      overflow-y: visible;
+      max-height: 70vh;
+      overflow-y: auto;
       border-radius: 18px 18px 0 0;
       transform: translateY(0);
       transform-origin: bottom center;
@@ -341,29 +300,20 @@
       opacity: 1;
     }
 
-    .settings-header {
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-    }
+    .settings-header { margin-bottom: 10px; padding-bottom: 8px; }
     .settings-header h3 { font-size: 13px; }
-
     .settings-section { margin-bottom: 12px; }
     .settings-section h2 { margin-bottom: 6px; font-size: 9px; }
-
     .theme-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .theme-btn { padding: 8px 6px; font-size: 11px; min-height: 36px; text-align: center; }
-
     .color-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
     .color-swatch { border-radius: 8px; min-height: 0; }
-
     .slider-row { margin-bottom: 6px; gap: 10px; }
     .slider-row label { font-size: 11px; min-width: 60px; }
     .slider-row input[type="range"] { margin: 8px 0; }
-
     .loading { font-size: 13px; }
   }
 
-  /* Touch-Geräte: statt Maus-Hinweisen die Touch-Hinweise zeigen */
   @media (hover: none) and (pointer: coarse) {
     #controls-desktop { display: none; }
     #controls-mobile {
@@ -376,16 +326,38 @@
     #controls-mobile .value { font-size: 11px; }
   }
 </style>
+<script src="shared.js" defer></script>
 </head>
 <body>
 
 <div id="canvas-container"></div>
 
-<button class="settings-toggle" id="reset-view" aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">⌂</button>
-<button class="settings-toggle" id="settings-toggle" aria-label="Einstellungen öffnen">⚙</button>
-<div class="overlay" id="overlay"></div>
+<!-- Back-Link (oben links) -->
+<a href="index.html" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M19 12H5M11 18l-6-6 6-6"/>
+  </svg>
+  Werkstatt
+</a>
 
-<div class="panel hidden" id="settings-panel">
+<!-- Theme-Toggle (oben rechts, aus shared.css) -->
+<button class="theme-toggle" data-theme-toggle aria-label="Hell/Dunkel umschalten">
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </svg>
+</button>
+
+<!-- Reset-View und Settings-Toggle -->
+<button class="fab" id="reset-view" aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">⌂</button>
+<button class="fab" id="settings-toggle" aria-label="Einstellungen öffnen">⚙</button>
+
+<div class="overlay-bg" id="overlay"></div>
+
+<div id="settings-panel" class="hidden">
   <div class="settings-header">
     <h3>Einstellungen</h3>
     <button class="settings-close" id="settings-close" aria-label="Schliessen">×</button>
@@ -399,7 +371,7 @@
     <div class="color-grid" id="color-grid"></div>
   </div>
   <div class="settings-section">
-    <h2>Licht & Schatten</h2>
+    <h2>Licht &amp; Schatten</h2>
     <div class="slider-row">
       <label>Helligkeit</label>
       <input type="range" id="exposure-slider" min="0.3" max="2.5" step="0.05" value="1.0">
@@ -414,9 +386,10 @@
     <div class="info-item"><span class="info-label">Datei</span><span class="info-value" id="filename">–</span></div>
     <div class="info-item"><span class="info-label">Grösse</span><span class="info-value" id="stats">–</span></div>
   </div>
+  <div class="copyright-line">© Raphael Fisch 2026</div>
 </div>
 
-<div class="panel controls" id="controls-desktop">
+<div class="controls-hint" id="controls-desktop">
   <div class="label">Drehen</div>
   <div class="label">Zoom</div>
   <div class="label">Verschieben</div>
@@ -425,7 +398,7 @@
   <div class="value">rechte Maustaste</div>
 </div>
 
-<div class="panel controls" id="controls-mobile">
+<div class="controls-hint" id="controls-mobile">
   <div class="label">Drehen</div>
   <div class="label">Zoom</div>
   <div class="label">Verschieben</div>
@@ -435,6 +408,7 @@
 </div>
 
 <div class="loading" id="loading">Lade Modell…</div>
+
 
 <script type="importmap">
 {
@@ -455,7 +429,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 const STL_URL = 'volume-18-skulptur.stl';
 // ====================================================
 
-// ========== THEMES ==========
+// ========== THEMES (szenen-spezifisch, nicht das globale UI-Theme) ==========
 const themes = {
   'studio-hell': {
     label: 'Studio hell',
@@ -572,37 +546,22 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.enablePan = true;
-// Touch-Gesten: 1 Finger drehen, 2 Finger zoomen/pannen
 controls.touches = {
   ONE: THREE.TOUCH.ROTATE,
   TWO: THREE.TOUCH.DOLLY_PAN
 };
 
-// ========== MODEL FRAMING ==========
-// Berechnet automatisch den optimalen Kamera-Abstand
-// sodass das Modell immer gut ins Bild passt, egal welche Bildschirmgrösse
-let modelSize = null; // Wird nach dem Laden gesetzt
-let userHasZoomed = false; // Wird true, sobald der Nutzer selbst zoomt
+let modelSize = null;
+let userHasZoomed = false;
 
 function frameModel() {
   if (!modelSize) return;
-
   const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
-
-  // Abstand berechnen basierend auf Field-of-View und Aspect Ratio
   const fov = camera.fov * (Math.PI / 180);
   const aspect = camera.aspect;
-
-  // Vertikaler Abstand (basierend auf Höhe)
   const distV = (maxDim / 2) / Math.tan(fov / 2);
-  // Horizontaler Abstand (basierend auf Breite)
   const distH = distV / aspect;
-
-  // Den grösseren Abstand nehmen, damit Modell in beiden Dimensionen passt
-  // Plus Puffer (1.4) für etwas Abstand zum Rand
   const dist = Math.max(distV, distH) * 1.4;
-
-  // Kamera-Position beibehalten (Richtung), nur Abstand anpassen
   const direction = new THREE.Vector3()
     .subVectors(camera.position, controls.target)
     .normalize();
@@ -610,10 +569,8 @@ function frameModel() {
   controls.update();
 }
 
-// Wenn Nutzer selbst zoomt, Auto-Framing deaktivieren
-controls.addEventListener('start', () => {
-  userHasZoomed = true;
-});
+controls.addEventListener('start', () => { userHasZoomed = true; });
+
 function createGradientTexture(stops) {
   const canvas = document.createElement('canvas');
   canvas.width = 2;
@@ -628,8 +585,11 @@ function createGradientTexture(stops) {
   return texture;
 }
 
+let currentThemeKey = 'studio-dunkel'; // wird gleich durch globales Theme überschrieben
+
 function applyTheme(key) {
   const t = themes[key];
+  currentThemeKey = key;
 
   if (t.type === 'gradient') {
     scene.background = createGradientTexture(t.stops);
@@ -637,7 +597,8 @@ function applyTheme(key) {
     scene.background = new THREE.Color(t.color);
   }
 
-  document.body.classList.toggle('light', t.isLight);
+  // NICHT mehr body.light direkt setzen – das macht der globale WerkstattTheme-Toggle.
+  // Das 3D-Szenen-Theme ist unabhängig vom UI-Theme auswählbar.
 
   const oldGridY = grid.position.y;
   scene.remove(grid);
@@ -669,19 +630,16 @@ Object.entries(themes).forEach(([key, t]) => {
   themeGrid.appendChild(btn);
 });
 
-// ========== SLIDER ==========
 const exposureSlider = document.getElementById('exposure-slider');
 const shadowSlider = document.getElementById('shadow-slider');
 
 exposureSlider.addEventListener('input', (e) => {
   renderer.toneMappingExposure = parseFloat(e.target.value);
 });
-
 shadowSlider.addEventListener('input', (e) => {
   groundMat.opacity = parseFloat(e.target.value);
 });
 
-// ========== FARBEN ==========
 let currentMesh = null;
 
 function applyColor(idx) {
@@ -691,7 +649,6 @@ function applyColor(idx) {
   currentMesh.material.metalness = c.metalness;
   currentMesh.material.roughness = c.roughness;
   currentMesh.material.needsUpdate = true;
-
   document.querySelectorAll('.color-swatch').forEach((el, i) => {
     el.classList.toggle('active', i === idx);
   });
@@ -713,22 +670,18 @@ const settingsToggle = document.getElementById('settings-toggle');
 const settingsClose = document.getElementById('settings-close');
 const overlay = document.getElementById('overlay');
 
-function isMobile() {
-  return window.innerWidth <= 700;
-}
+function isMobile() { return window.innerWidth <= 700; }
 
 function openSettings() {
   settingsPanel.classList.remove('hidden');
   document.body.classList.add('settings-open');
   if (isMobile()) overlay.classList.add('visible');
 }
-
 function closeSettings() {
   settingsPanel.classList.add('hidden');
   document.body.classList.remove('settings-open');
   overlay.classList.remove('visible');
 }
-
 function toggleSettings() {
   if (settingsPanel.classList.contains('hidden')) openSettings();
   else closeSettings();
@@ -738,13 +691,10 @@ settingsToggle.addEventListener('click', toggleSettings);
 settingsClose.addEventListener('click', closeSettings);
 overlay.addEventListener('click', closeSettings);
 
-// Reset-View-Button: Ansicht sanft zur Home-Position animieren
+// Reset-View
 document.getElementById('reset-view').addEventListener('click', () => {
   if (!modelSize) return;
-
   const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
-
-  // Ziel berechnen
   const fov = camera.fov * (Math.PI / 180);
   const aspect = camera.aspect;
   const distV = (maxDim / 2) / Math.tan(fov / 2);
@@ -752,54 +702,33 @@ document.getElementById('reset-view').addEventListener('click', () => {
   const endDist = Math.max(distV, distH) * 1.4;
   const endTarget = new THREE.Vector3(0, 0, 0);
   const endDirection = new THREE.Vector3(maxDim, maxDim * 0.7, maxDim).normalize();
-
-  // Start-Werte
   const startTarget = controls.target.clone();
   const startOffset = camera.position.clone().sub(startTarget);
   const startDist = startOffset.length();
   const startDirection = startOffset.clone().normalize();
-
   const duration = 800;
   const startTime = performance.now();
-
   function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
-
-  // Quaternion-basierte Richtungs-Interpolation (fliegt auf Kugel-Bahn)
   const startQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), startDirection);
   const endQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), endDirection);
-
   function animateReset() {
     const elapsed = performance.now() - startTime;
     const t = Math.min(elapsed / duration, 1);
     const eased = easeInOutCubic(t);
-
-    // Richtung: Slerp zwischen Start und Ziel
     const currentQuat = new THREE.Quaternion().slerpQuaternions(startQuat, endQuat, eased);
     const currentDirection = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
-
-    // Distanz: linear interpoliert
     const currentDist = startDist + (endDist - startDist) * eased;
-
-    // Target: linear interpoliert
     const currentTarget = new THREE.Vector3().lerpVectors(startTarget, endTarget, eased);
-
     camera.position.copy(currentTarget).addScaledVector(currentDirection, currentDist);
     controls.target.copy(currentTarget);
     controls.update();
-
-    if (t < 1) {
-      requestAnimationFrame(animateReset);
-    } else {
-      userHasZoomed = false;
-    }
+    if (t < 1) requestAnimationFrame(animateReset);
+    else userHasZoomed = false;
   }
-
   animateReset();
 });
-
-// Panel startet geschlossen auf allen Geräten
 
 // ========== STL LADEN ==========
 const loader = new STLLoader();
@@ -837,7 +766,6 @@ loader.load(
     const size = bbox.getSize(new THREE.Vector3());
     modelSize = size;
 
-    // Kamera-Blickrichtung setzen (isometrisch-ähnlich), dann smartes Framing
     const maxDim = Math.max(size.x, size.y, size.z);
     camera.position.set(maxDim, maxDim * 0.7, maxDim);
     controls.target.set(0, 0, 0);
@@ -846,13 +774,11 @@ loader.load(
     ground.position.y = -size.y / 2;
     grid.position.y = -size.y / 2;
 
-    const triangles = geometry.attributes.position.count / 3;
     statsEl.innerHTML = `
       L ${size.x.toFixed(1)} × B ${size.z.toFixed(1)} × H ${size.y.toFixed(1)} mm
       <span class="dim-legend">L = Länge · B = Breite · H = Höhe</span>
     `;
     loadingEl.classList.add('hidden');
-
     document.querySelectorAll('.color-swatch')[0].classList.add('active');
   },
   (xhr) => {
@@ -868,8 +794,29 @@ loader.load(
   }
 );
 
-// Start
-applyTheme('studio-hell');
+// ========== GLOBALES UI-THEME mit Szenen-Theme verknüpfen ==========
+// Beim ersten Laden und bei jedem globalen Wechsel: das passende
+// Szenen-Theme wählen, aber nur wenn der Nutzer nicht explizit
+// ein anderes Szenen-Theme im Settings-Panel gewählt hat.
+let userPickedSceneTheme = false;
+
+function syncSceneThemeToUI(uiTheme) {
+  if (userPickedSceneTheme) return;
+  applyTheme(uiTheme === 'light' ? 'studio-hell' : 'studio-dunkel');
+}
+
+// Wenn der Nutzer selbst ein Szenen-Theme wählt, merken wir uns das
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => { userPickedSceneTheme = true; }, { once: false });
+});
+
+// Init mit globalem Theme, falls WerkstattTheme verfügbar
+if (window.WerkstattTheme) {
+  syncSceneThemeToUI(window.WerkstattTheme.get());
+  window.WerkstattTheme.onChange(syncSceneThemeToUI);
+} else {
+  applyTheme('studio-dunkel');
+}
 
 let resizeTimeout;
 window.addEventListener('resize', () => {
@@ -878,7 +825,6 @@ window.addEventListener('resize', () => {
   resizeTimeout = setTimeout(() => {
     document.body.classList.remove('resizing');
   }, 150);
-
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
