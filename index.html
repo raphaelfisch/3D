@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D-Werkstatt</title>
+<style>
+  :root {
+    --panel: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.12);
+    --text: #f0f0f0;
+    --muted: #8a9199;
+    --accent: #7dd3c0;
+    --accent-dim: rgba(125, 211, 192, 0.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+    background: #0a0d12;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(125, 211, 192, 0.08), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(100, 150, 220, 0.06), transparent 50%),
+      linear-gradient(180deg, #1a2030 0%, #0a0d12 60%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  .hero {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 80px 32px 40px;
+    text-align: center;
+  }
+  .eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(125, 211, 192, 0.3);
+    color: var(--accent);
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 7vw, 72px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #c8d2de 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 32px 80px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-thumb {
+    aspect-ratio: 16 / 10;
+    position: relative;
+    background: linear-gradient(135deg, #1a2030 0%, #0f141a 100%);
+    overflow: hidden;
+  }
+  .card-thumb canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .card-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(10, 13, 18, 0.5) 100%);
+    pointer-events: none;
+  }
+
+  .card-body {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .card h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .card-arrow {
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted);
+    transition: transform 0.2s, color 0.2s;
+    flex-shrink: 0;
+  }
+  .card-arrow svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 40px 32px 60px;
+    color: var(--muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 56px 20px 32px; }
+    .hero h1 { font-size: 38px; }
+    .hero p { font-size: 15px; }
+    .grid { padding: 24px 20px 60px; gap: 16px; }
+    .card-body { padding: 18px 20px; }
+    .card h2 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <h1>3D-Werkstatt</h1>
+</section>
+
+<div class="grid">
+
+  <a href="volume-18.html" class="card">
+    <div class="card-thumb" data-thumb="skulptur"></div>
+    <div class="card-body">
+      <h2>Volume 18</h2>
+      <span class="card-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </span>
+    </div>
+  </a>
+
+  <a href="3D-viewer.html" class="card">
+    <div class="card-thumb" data-thumb="viewer"></div>
+    <div class="card-body">
+      <h2>3D-Viewer</h2>
+      <span class="card-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M13 6l6 6-6 6"/>
+        </svg>
+      </span>
+    </div>
+  </a>
+
+</div>
+
+<footer class="footer">
+  © Raphael Fisch 2026
+</footer>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+function createThumbnail(container, type) {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 16/10, 0.1, 100);
+  camera.position.set(5, 3.5, 6);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  const resize = () => {
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0) return;
+    renderer.setSize(rect.width, rect.height, false);
+    camera.aspect = rect.width / rect.height;
+    camera.updateProjectionMatrix();
+  };
+
+  container.appendChild(renderer.domElement);
+  resize();
+
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+  const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+  keyLight.position.set(3, 5, 3);
+  scene.add(keyLight);
+  const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.5);
+  fillLight.position.set(-3, 2, -2);
+  scene.add(fillLight);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
+
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x7dd3c0,
+    metalness: 0.5,
+    roughness: 0.3,
+    envMapIntensity: 1.2
+  });
+
+  const group = new THREE.Group();
+
+  if (type === 'skulptur') {
+    // Echte STL-Datei der Volume-18-Skulptur laden
+    const loader = new STLLoader();
+    loader.load('volume-18-skulptur.stl', (geometry) => {
+      geometry.rotateX(-Math.PI / 2);
+      geometry.computeBoundingBox();
+      geometry.computeVertexNormals();
+
+      const bbox = geometry.boundingBox;
+      const center = bbox.getCenter(new THREE.Vector3());
+      geometry.translate(-center.x, -center.y, -center.z);
+
+      // Auf Thumbnail-Grösse skalieren (Zielhöhe ca. 3 Einheiten)
+      const size = bbox.getSize(new THREE.Vector3());
+      const scale = 3 / Math.max(size.x, size.y, size.z);
+      geometry.scale(scale, scale, scale);
+
+      const mesh = new THREE.Mesh(geometry, material);
+      group.add(mesh);
+    });
+
+  } else if (type === 'viewer') {
+    // Kristalliner Polyeder mit Wireframe-Overlay
+    const geo = new THREE.IcosahedronGeometry(1.2, 0);
+    const mesh = new THREE.Mesh(geo, material);
+    group.add(mesh);
+
+    const edges = new THREE.EdgesGeometry(geo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+    const wire = new THREE.LineSegments(edges, lineMat);
+    group.add(wire);
+  }
+
+  scene.add(group);
+
+  function animate() {
+    requestAnimationFrame(animate);
+    group.rotation.y += 0.005;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  new ResizeObserver(resize).observe(container);
+}
+
+document.querySelectorAll('[data-thumb]').forEach(el => {
+  createThumbnail(el, el.dataset.thumb);
+});
+</script>
+
+</body>
+</html>
