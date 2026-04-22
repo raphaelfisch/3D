@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>3D-Viewer</title>
+<style>
+  :root {
+    --panel: rgba(255,255,255,0.08);
+    --panel-dark: rgba(0,0,0,0.1);
+    --border: rgba(255,255,255,0.15);
+    --border-dark: rgba(0,0,0,0.15);
+    --text: #f0f0f0;
+    --text-dark: #1a1a1a;
+    --muted: #8a9199;
+    --muted-dark: #5a6066;
+    --accent: #7dd3c0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height:100%; overflow:hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+    transition: color 0.3s;
+    overscroll-behavior: none;
+  }
+  body.light { color: var(--text-dark); }
+  body.light .panel { background: var(--panel-dark); border-color: var(--border-dark); }
+  body.light .muted-text { color: var(--muted-dark); }
+  body.light .theme-btn { color: var(--text-dark); border-color: var(--border-dark); }
+  body.light .theme-btn:hover { background: rgba(0,0,0,0.06); }
+  body.light .color-swatch { border-color: rgba(0,0,0,0.2); }
+  body.light .settings-toggle { color: var(--text-dark); }
+  body.light .settings-close { color: var(--text-dark); }
+
+  body.resizing *, body.resizing *::before, body.resizing *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  #canvas-container {
+    position: fixed; inset: 0;
+    touch-action: none;
+  }
+  canvas { display:block; touch-action: none; }
+
+  .panel {
+    position: fixed;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  #info-panel { display: none; }
+
+  .info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 4px 0;
+    font-size: 12px;
+    gap: 12px;
+  }
+  .info-label {
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  body.light .info-label { color: var(--muted-dark); }
+  .info-value {
+    color: var(--text);
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+  }
+  body.light .info-value { color: var(--text-dark); }
+  .dim-legend {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  body.light .dim-legend { color: var(--muted-dark); }
+
+  /* Settings-Toggle (Zahnrad-Button, immer sichtbar) */
+  .settings-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    width: 48px; height: 48px;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center; justify-content: center;
+    color: var(--text);
+    font-size: 22px;
+    transition: all 0.2s, opacity 0.2s, transform 0.2s;
+    z-index: 20;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  body.settings-open .settings-toggle {
+    opacity: 0;
+    transform: scale(0.9);
+    pointer-events: none;
+  }
+  #reset-view {
+    right: 76px;
+    font-size: 24px;
+  }
+  .settings-toggle:hover, .settings-toggle:active {
+    background: rgba(125, 211, 192, 0.15);
+    border-color: var(--accent);
+  }
+
+  /* Overlay hinter dem Panel (Mobile) */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #settings-panel {
+    top: 16px; right: 16px;
+    width: 280px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    z-index: 15;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s;
+    transform-origin: top right;
+  }
+  #settings-panel.hidden {
+    transform: scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  body.light .settings-header { border-bottom-color: var(--border-dark); }
+  .settings-header h3 {
+    font-size: 14px; font-weight: 600;
+  }
+  .settings-close {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .settings-close:hover { background: rgba(255,255,255,0.1); }
+
+  .settings-section { margin-bottom: 18px; }
+  .settings-section:last-child { margin-bottom: 0; }
+  .settings-section h2 {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .theme-btn {
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    min-height: 44px;
+  }
+  .theme-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #0f1419;
+    border-color: var(--accent);
+  }
+  body.light .theme-btn.active {
+    background: var(--accent);
+    color: #0f1419;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .color-swatch {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    transition: all 0.15s;
+    position: relative;
+    min-height: 36px;
+  }
+  .color-swatch:hover {
+    transform: scale(1.1);
+  }
+  .color-swatch.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .slider-row {
+    display: flex; align-items: center;
+    gap: 12px; margin-bottom: 14px;
+  }
+  .slider-row:last-child { margin-bottom: 0; }
+  .slider-row label {
+    font-size: 12px; font-weight: 500;
+    color: var(--muted); min-width: 70px;
+  }
+  body.light .slider-row label { color: var(--muted-dark); }
+  .slider-row input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 3px;
+    outline: none;
+    padding: 0;
+    margin: 12px 0;
+  }
+  body.light .slider-row input[type="range"] {
+    background: rgba(0,0,0,0.15);
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px; height: 24px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid rgba(255,255,255,0.95);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .slider-row input[type="range"]::-moz-range-thumb {
+    width: 24px; height: 24px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid rgba(255,255,255,0.95);
+  }
+
+  .controls {
+    position: fixed; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(80px, 1fr));
+    column-gap: 20px;
+    row-gap: 2px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 12px 20px;
+    text-align: center;
+    max-width: calc(100vw - 32px);
+  }
+  .controls .label {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  body.light .controls .label { color: var(--text-dark); }
+  .controls .value {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  #controls-mobile { display: none; }
+
+  .loading {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: var(--muted);
+    pointer-events: none;
+  }
+  .loading.hidden { display: none; }
+
+  /* ============ START-BILDSCHIRM ============ */
+  .dropzone {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+    background: transparent;
+    padding: 20px;
+  }
+  .dropzone.hidden { display: none; }
+  .dropzone.drag-active .drop-area {
+    border-color: var(--accent);
+    background: rgba(125, 211, 192, 0.12);
+    transform: scale(1.02);
+  }
+  .drop-area {
+    max-width: 440px;
+    width: 100%;
+    padding: 40px 36px;
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 2px dashed var(--border);
+    border-radius: 18px;
+    text-align: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  }
+  body.light .drop-area { border-color: var(--border-dark); }
+  .drop-icon {
+    font-size: 52px; margin-bottom: 16px;
+    opacity: 0.8;
+  }
+  .drop-area h2 {
+    font-size: 22px; font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .drop-area p {
+    font-size: 14px; color: var(--muted);
+    margin-bottom: 24px;
+  }
+  body.light .drop-area p { color: var(--muted-dark); }
+  .drop-btn {
+    padding: 12px 28px;
+    background: var(--accent);
+    color: #0f1419;
+    font-weight: 600;
+    font-size: 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.1s, box-shadow 0.15s;
+  }
+  .drop-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(125, 211, 192, 0.3);
+  }
+  .drop-hint {
+    margin-top: 20px;
+    font-size: 12px; color: var(--muted);
+  }
+  body.light .drop-hint { color: var(--muted-dark); }
+
+  /* Overlay beim Nachladen einer zweiten Datei */
+  .drop-overlay-active {
+    position: fixed; inset: 0;
+    background: rgba(125, 211, 192, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 60;
+    pointer-events: none;
+    border: 3px dashed var(--accent);
+  }
+  .drop-overlay-active.active { display: flex; }
+  .drop-overlay-text {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--accent);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+
+  .load-new-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .load-new-btn:hover {
+    border-color: var(--accent);
+    background: rgba(125, 211, 192, 0.1);
+  }
+  body.light .load-new-btn { color: var(--text-dark); border-color: var(--border-dark); }
+
+  /* ============ MOBILE ============ */
+  @media (max-width: 700px) {
+    .settings-toggle {
+      top: 12px; right: 12px;
+      width: 52px; height: 52px;
+    }
+    #reset-view {
+      right: 76px;
+    }
+
+    #settings-panel {
+      top: auto;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      max-height: none;
+      overflow-y: visible;
+      border-radius: 18px 18px 0 0;
+      transform: translateY(0);
+      transform-origin: bottom center;
+      padding: 14px 16px 18px;
+    }
+    #settings-panel.hidden {
+      transform: translateY(100%);
+      opacity: 1;
+    }
+
+    .settings-header {
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+    }
+    .settings-header h3 { font-size: 13px; }
+
+    .settings-section { margin-bottom: 12px; }
+    .settings-section h2 { margin-bottom: 6px; font-size: 9px; }
+
+    .theme-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .theme-btn { padding: 8px 6px; font-size: 11px; min-height: 36px; text-align: center; }
+
+    .color-grid { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+    .color-swatch { border-radius: 8px; min-height: 0; }
+
+    .slider-row { margin-bottom: 6px; gap: 10px; }
+    .slider-row label { font-size: 11px; min-width: 60px; }
+    .slider-row input[type="range"] { margin: 8px 0; }
+
+    .loading { font-size: 13px; }
+  }
+
+  /* Touch-Geräte: statt Maus-Hinweisen die Touch-Hinweise zeigen */
+  @media (hover: none) and (pointer: coarse) {
+    #controls-desktop { display: none; }
+    #controls-mobile {
+      display: grid;
+      bottom: 12px;
+      padding: 10px 16px;
+      column-gap: 14px;
+    }
+    #controls-mobile .label { font-size: 9px; }
+    #controls-mobile .value { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Start-Bildschirm mit Drag & Drop -->
+<div class="dropzone" id="dropzone">
+  <div class="drop-area" id="drop-area">
+    <div class="drop-icon">📦</div>
+    <h2>STL-Datei hier ablegen</h2>
+    <p>oder klicke, um eine Datei auszuwählen</p>
+    <button class="drop-btn" id="select-btn">Datei auswählen</button>
+    <div class="drop-hint">Unterstützte Formate: .stl (binär und ASCII)</div>
+  </div>
+</div>
+
+<!-- Drop-Overlay während des Nachladens -->
+<div class="drop-overlay-active" id="drop-overlay-active">
+  <div class="drop-overlay-text">⬇ Datei hier ablegen</div>
+</div>
+
+<input type="file" id="file-input" accept=".stl" style="display:none;">
+
+<button class="settings-toggle" id="reset-view" aria-label="Ansicht zurücksetzen" title="Ansicht zurücksetzen">⌂</button>
+<button class="settings-toggle" id="settings-toggle" aria-label="Einstellungen öffnen">⚙</button>
+<div class="overlay" id="overlay"></div>
+
+<div class="panel hidden" id="settings-panel">
+  <div class="settings-header">
+    <h3>Einstellungen</h3>
+    <button class="settings-close" id="settings-close" aria-label="Schliessen">×</button>
+  </div>
+  <div class="settings-section">
+    <h2>Hintergrund</h2>
+    <div class="theme-grid" id="theme-grid"></div>
+  </div>
+  <div class="settings-section">
+    <h2>Modellfarbe</h2>
+    <div class="color-grid" id="color-grid"></div>
+  </div>
+  <div class="settings-section">
+    <h2>Licht & Schatten</h2>
+    <div class="slider-row">
+      <label>Helligkeit</label>
+      <input type="range" id="exposure-slider" min="0.3" max="2.5" step="0.05" value="1.0">
+    </div>
+    <div class="slider-row">
+      <label>Schatten</label>
+      <input type="range" id="shadow-slider" min="0" max="1" step="0.05" value="0.4">
+    </div>
+  </div>
+  <div class="settings-section">
+    <h2>Modell</h2>
+    <div class="info-item"><span class="info-label">Datei</span><span class="info-value" id="filename">–</span></div>
+    <div class="info-item"><span class="info-label">Grösse</span><span class="info-value" id="stats">–</span></div>
+    <button class="load-new-btn" id="load-new-btn">Andere STL-Datei laden</button>
+  </div>
+</div>
+
+<div class="panel controls" id="controls-desktop">
+  <div class="label">Drehen</div>
+  <div class="label">Zoom</div>
+  <div class="label">Verschieben</div>
+  <div class="value">linke Maustaste</div>
+  <div class="value">Mausrad</div>
+  <div class="value">rechte Maustaste</div>
+</div>
+
+<div class="panel controls" id="controls-mobile">
+  <div class="label">Drehen</div>
+  <div class="label">Zoom</div>
+  <div class="label">Verschieben</div>
+  <div class="value">1 Finger</div>
+  <div class="value">2 Finger</div>
+  <div class="value">2 Finger ziehen</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// ========== THEMES ==========
+const themes = {
+  'studio-hell': {
+    label: 'Studio hell',
+    type: 'gradient',
+    stops: [['#f5f7fa', 0], ['#e4e9f0', 0.6], ['#c8d2de', 1]],
+    isLight: true,
+    gridColors: [0xc8d2de, 0xb5c0cd],
+    gridOpacity: 0.6,
+    shadowOpacity: 0.25,
+    exposure: 1.0
+  },
+  'studio-dunkel': {
+    label: 'Studio dunkel',
+    type: 'gradient',
+    stops: [['#2a3340', 0], ['#151a22', 0.5], ['#0a0d12', 1]],
+    isLight: false,
+    gridColors: [0x3a4352, 0x252b36],
+    gridOpacity: 0.5,
+    shadowOpacity: 0.45,
+    exposure: 1.1
+  },
+  'himmel': {
+    label: 'Himmel',
+    type: 'gradient',
+    stops: [['#7cb7e0', 0], ['#c4dcef', 0.5], ['#f0e7d8', 1]],
+    isLight: true,
+    gridColors: [0xa8c4d8, 0x8eb0c8],
+    gridOpacity: 0.5,
+    shadowOpacity: 0.3,
+    exposure: 1.0
+  },
+  'papier': {
+    label: 'Papier',
+    type: 'solid',
+    color: '#f3ede0',
+    isLight: true,
+    gridColors: [0xd4cbb8, 0xc0b69f],
+    gridOpacity: 0.5,
+    shadowOpacity: 0.22,
+    exposure: 1.05
+  }
+};
+
+// ========== MODELLFARBEN ==========
+const modelColors = [
+  { name: 'Blaugrau',   color: 0xb8c5cc, metalness: 0.4,  roughness: 0.35 },
+  { name: 'Türkis',     color: 0x7dd3c0, metalness: 0.2,  roughness: 0.4 },
+  { name: 'Gold',       color: 0xe8b96a, metalness: 0.85, roughness: 0.25 },
+  { name: 'Kupfer',     color: 0xc87a4a, metalness: 0.8,  roughness: 0.3 },
+  { name: 'Weiss',      color: 0xf0f0f0, metalness: 0.1,  roughness: 0.5 },
+  { name: 'Schwarz',    color: 0x2a2a2a, metalness: 0.5,  roughness: 0.3 },
+  { name: 'Orange',     color: 0xe76f51, metalness: 0.1,  roughness: 0.45 },
+  { name: 'Rot',        color: 0xc23b3b, metalness: 0.2,  roughness: 0.35 },
+  { name: 'Grün',       color: 0x5a9a6c, metalness: 0.2,  roughness: 0.4 },
+  { name: 'Blau',       color: 0x4a7bb8, metalness: 0.2,  roughness: 0.4 },
+  { name: 'Violett',    color: 0x8b5cb8, metalness: 0.3,  roughness: 0.35 },
+  { name: 'Silber',     color: 0xc8c8c8, metalness: 0.9,  roughness: 0.2 }
+];
+
+// ========== THREE.JS ==========
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+camera.position.set(150, 120, 200);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+container.appendChild(renderer.domElement);
+
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.0);
+keyLight.position.set(120, 200, 100);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.left = -200;
+keyLight.shadow.camera.right = 200;
+keyLight.shadow.camera.top = 200;
+keyLight.shadow.camera.bottom = -200;
+keyLight.shadow.bias = -0.0005;
+keyLight.shadow.radius = 4;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xb0d4e0, 0.6);
+fillLight.position.set(-120, 80, -80);
+scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.9);
+rimLight.position.set(0, 100, -150);
+scene.add(rimLight);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambient);
+
+const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+const groundMat = new THREE.ShadowMaterial({ opacity: 0.4 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+let grid = new THREE.GridHelper(600, 30, 0x3a4352, 0x252b36);
+scene.add(grid);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = true;
+// Touch-Gesten: 1 Finger drehen, 2 Finger zoomen/pannen
+controls.touches = {
+  ONE: THREE.TOUCH.ROTATE,
+  TWO: THREE.TOUCH.DOLLY_PAN
+};
+
+// ========== MODEL FRAMING ==========
+// Berechnet automatisch den optimalen Kamera-Abstand
+// sodass das Modell immer gut ins Bild passt, egal welche Bildschirmgrösse
+let modelSize = null; // Wird nach dem Laden gesetzt
+let userHasZoomed = false; // Wird true, sobald der Nutzer selbst zoomt
+
+function frameModel() {
+  if (!modelSize) return;
+
+  const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+
+  // Abstand berechnen basierend auf Field-of-View und Aspect Ratio
+  const fov = camera.fov * (Math.PI / 180);
+  const aspect = camera.aspect;
+
+  // Vertikaler Abstand (basierend auf Höhe)
+  const distV = (maxDim / 2) / Math.tan(fov / 2);
+  // Horizontaler Abstand (basierend auf Breite)
+  const distH = distV / aspect;
+
+  // Den grösseren Abstand nehmen, damit Modell in beiden Dimensionen passt
+  // Plus Puffer (1.4) für etwas Abstand zum Rand
+  const dist = Math.max(distV, distH) * 1.4;
+
+  // Kamera-Position beibehalten (Richtung), nur Abstand anpassen
+  const direction = new THREE.Vector3()
+    .subVectors(camera.position, controls.target)
+    .normalize();
+  camera.position.copy(controls.target).addScaledVector(direction, dist);
+  controls.update();
+}
+
+// Wenn Nutzer selbst zoomt, Auto-Framing deaktivieren
+controls.addEventListener('start', () => {
+  userHasZoomed = true;
+});
+function createGradientTexture(stops) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+  stops.forEach(([color, pos]) => gradient.addColorStop(pos, color));
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 2, 512);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function applyTheme(key) {
+  const t = themes[key];
+
+  if (t.type === 'gradient') {
+    scene.background = createGradientTexture(t.stops);
+  } else {
+    scene.background = new THREE.Color(t.color);
+  }
+
+  document.body.classList.toggle('light', t.isLight);
+
+  const oldGridY = grid.position.y;
+  scene.remove(grid);
+  grid.dispose?.();
+  grid = new THREE.GridHelper(600, 30, t.gridColors[0], t.gridColors[1]);
+  grid.material.transparent = true;
+  grid.material.opacity = t.gridOpacity;
+  grid.position.y = oldGridY;
+  scene.add(grid);
+
+  groundMat.opacity = t.shadowOpacity;
+  renderer.toneMappingExposure = t.exposure;
+
+  exposureSlider.value = t.exposure;
+  shadowSlider.value = t.shadowOpacity;
+
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === key);
+  });
+}
+
+const themeGrid = document.getElementById('theme-grid');
+Object.entries(themes).forEach(([key, t]) => {
+  const btn = document.createElement('button');
+  btn.className = 'theme-btn';
+  btn.dataset.theme = key;
+  btn.textContent = t.label;
+  btn.addEventListener('click', () => applyTheme(key));
+  themeGrid.appendChild(btn);
+});
+
+// ========== SLIDER ==========
+const exposureSlider = document.getElementById('exposure-slider');
+const shadowSlider = document.getElementById('shadow-slider');
+
+exposureSlider.addEventListener('input', (e) => {
+  renderer.toneMappingExposure = parseFloat(e.target.value);
+});
+
+shadowSlider.addEventListener('input', (e) => {
+  groundMat.opacity = parseFloat(e.target.value);
+});
+
+// ========== FARBEN ==========
+let currentMesh = null;
+
+function applyColor(idx) {
+  if (!currentMesh) return;
+  const c = modelColors[idx];
+  currentMesh.material.color.setHex(c.color);
+  currentMesh.material.metalness = c.metalness;
+  currentMesh.material.roughness = c.roughness;
+  currentMesh.material.needsUpdate = true;
+
+  document.querySelectorAll('.color-swatch').forEach((el, i) => {
+    el.classList.toggle('active', i === idx);
+  });
+}
+
+const colorGrid = document.getElementById('color-grid');
+modelColors.forEach((c, idx) => {
+  const sw = document.createElement('div');
+  sw.className = 'color-swatch';
+  sw.style.background = '#' + c.color.toString(16).padStart(6, '0');
+  sw.title = c.name;
+  sw.addEventListener('click', () => applyColor(idx));
+  colorGrid.appendChild(sw);
+});
+
+// ========== SETTINGS-TOGGLE ==========
+const settingsPanel = document.getElementById('settings-panel');
+const settingsToggle = document.getElementById('settings-toggle');
+const settingsClose = document.getElementById('settings-close');
+const overlay = document.getElementById('overlay');
+
+function isMobile() {
+  return window.innerWidth <= 700;
+}
+
+function openSettings() {
+  settingsPanel.classList.remove('hidden');
+  document.body.classList.add('settings-open');
+  if (isMobile()) overlay.classList.add('visible');
+}
+
+function closeSettings() {
+  settingsPanel.classList.add('hidden');
+  document.body.classList.remove('settings-open');
+  overlay.classList.remove('visible');
+}
+
+function toggleSettings() {
+  if (settingsPanel.classList.contains('hidden')) openSettings();
+  else closeSettings();
+}
+
+settingsToggle.addEventListener('click', toggleSettings);
+settingsClose.addEventListener('click', closeSettings);
+overlay.addEventListener('click', closeSettings);
+
+// Reset-View-Button: Ansicht sanft zur Home-Position animieren
+document.getElementById('reset-view').addEventListener('click', () => {
+  if (!modelSize) return;
+
+  const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+
+  // Ziel berechnen
+  const fov = camera.fov * (Math.PI / 180);
+  const aspect = camera.aspect;
+  const distV = (maxDim / 2) / Math.tan(fov / 2);
+  const distH = distV / aspect;
+  const endDist = Math.max(distV, distH) * 1.4;
+  const endTarget = new THREE.Vector3(0, 0, 0);
+  const endDirection = new THREE.Vector3(maxDim, maxDim * 0.7, maxDim).normalize();
+
+  // Start-Werte
+  const startTarget = controls.target.clone();
+  const startOffset = camera.position.clone().sub(startTarget);
+  const startDist = startOffset.length();
+  const startDirection = startOffset.clone().normalize();
+
+  const duration = 800;
+  const startTime = performance.now();
+
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  // Quaternion-basierte Richtungs-Interpolation (fliegt auf Kugel-Bahn)
+  const startQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), startDirection);
+  const endQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), endDirection);
+
+  function animateReset() {
+    const elapsed = performance.now() - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = easeInOutCubic(t);
+
+    // Richtung: Slerp zwischen Start und Ziel
+    const currentQuat = new THREE.Quaternion().slerpQuaternions(startQuat, endQuat, eased);
+    const currentDirection = new THREE.Vector3(0, 1, 0).applyQuaternion(currentQuat);
+
+    // Distanz: linear interpoliert
+    const currentDist = startDist + (endDist - startDist) * eased;
+
+    // Target: linear interpoliert
+    const currentTarget = new THREE.Vector3().lerpVectors(startTarget, endTarget, eased);
+
+    camera.position.copy(currentTarget).addScaledVector(currentDirection, currentDist);
+    controls.target.copy(currentTarget);
+    controls.update();
+
+    if (t < 1) {
+      requestAnimationFrame(animateReset);
+    } else {
+      userHasZoomed = false;
+    }
+  }
+
+  animateReset();
+});
+
+// Panel startet geschlossen auf allen Geräten
+
+// ========== STL LADEN ==========
+const loader = new STLLoader();
+const statsEl = document.getElementById('stats');
+const filenameEl = document.getElementById('filename');
+const dropzone = document.getElementById('dropzone');
+const dropArea = document.getElementById('drop-area');
+const dropOverlayActive = document.getElementById('drop-overlay-active');
+const fileInput = document.getElementById('file-input');
+
+let currentMeshRef = null; // Referenz auf aktuell geladenes Modell
+
+function loadSTLFromFile(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.stl')) {
+    alert('Bitte eine .stl-Datei auswählen.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const geometry = loader.parse(e.target.result);
+      addGeometry(geometry, file.name);
+      dropzone.classList.add('hidden');
+    } catch (err) {
+      alert('Fehler beim Laden der Datei:\n' + err.message);
+      console.error(err);
+    }
+  };
+  reader.onerror = () => alert('Datei konnte nicht gelesen werden.');
+  reader.readAsArrayBuffer(file);
+}
+
+function addGeometry(geometry, fileName) {
+  // Altes Modell entfernen
+  if (currentMeshRef) {
+    scene.remove(currentMeshRef);
+    currentMeshRef.geometry.dispose();
+    currentMeshRef.material.dispose();
+    currentMeshRef = null;
+    currentMesh = null;
+  }
+
+  geometry.rotateX(-Math.PI / 2);
+  geometry.computeBoundingBox();
+  geometry.computeVertexNormals();
+
+  const bbox = geometry.boundingBox;
+  const center = bbox.getCenter(new THREE.Vector3());
+  geometry.translate(-center.x, -center.y, -center.z);
+
+  const initialColor = modelColors[0];
+  const material = new THREE.MeshStandardMaterial({
+    color: initialColor.color,
+    metalness: initialColor.metalness,
+    roughness: initialColor.roughness,
+    envMapIntensity: 1.2,
+    flatShading: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+  currentMesh = mesh;
+  currentMeshRef = mesh;
+
+  const size = bbox.getSize(new THREE.Vector3());
+  modelSize = size;
+
+  const maxDim = Math.max(size.x, size.y, size.z);
+  camera.position.set(maxDim, maxDim * 0.7, maxDim);
+  controls.target.set(0, 0, 0);
+  userHasZoomed = false;
+  frameModel();
+
+  ground.position.y = -size.y / 2;
+  grid.position.y = -size.y / 2;
+
+  filenameEl.textContent = fileName;
+  statsEl.innerHTML = `
+    L ${size.x.toFixed(1)} × B ${size.z.toFixed(1)} × H ${size.y.toFixed(1)} mm
+    <span class="dim-legend">L = Länge · B = Breite · H = Höhe</span>
+  `;
+
+  // Erste Farbe als aktiv markieren
+  document.querySelectorAll('.color-swatch').forEach((el, i) => {
+    el.classList.toggle('active', i === 0);
+  });
+}
+
+// ========== DATEI-INPUT ==========
+document.getElementById('select-btn').addEventListener('click', () => fileInput.click());
+document.getElementById('load-new-btn').addEventListener('click', () => {
+  closeSettings();
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    loadSTLFromFile(e.target.files[0]);
+  }
+  fileInput.value = ''; // Reset, damit man dieselbe Datei erneut laden kann
+});
+
+// ========== DRAG & DROP ==========
+let dragCounter = 0;
+
+window.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragCounter++;
+  if (dropzone.classList.contains('hidden')) {
+    // Ein Modell ist schon geladen -> Overlay zeigen
+    dropOverlayActive.classList.add('active');
+  } else {
+    // Start-Bildschirm ist sichtbar -> Drop-Area aufleuchten lassen
+    dropzone.classList.add('drag-active');
+  }
+});
+
+window.addEventListener('dragover', (e) => {
+  e.preventDefault();
+});
+
+window.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    dropOverlayActive.classList.remove('active');
+    dropzone.classList.remove('drag-active');
+  }
+});
+
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlayActive.classList.remove('active');
+  dropzone.classList.remove('drag-active');
+
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    loadSTLFromFile(files[0]);
+  }
+});
+
+// Start
+
+// Start
+applyTheme('studio-hell');
+
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  document.body.classList.add('resizing');
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    document.body.classList.remove('resizing');
+  }, 150);
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (!userHasZoomed) frameModel();
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+
+</body>
+</html>
