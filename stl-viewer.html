@@ -6,48 +6,55 @@
 <title>3D-Viewer</title>
 <style>
   :root {
-    --bg: #0f1419;
-    --panel: rgba(255,255,255,0.06);
-    --border: rgba(255,255,255,0.12);
-    --text: #e8e8e8;
+    --bg-bottom: #0a0d12;
+    --panel: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.1);
+    --text: #f0f0f0;
     --muted: #8a9199;
     --accent: #7dd3c0;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  html, body { height:100%; overflow:hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  html, body {
+    height:100%; overflow:hidden;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg-bottom);
+    color: var(--text);
+  }
   #canvas-container { position: fixed; inset: 0; }
   canvas { display:block; }
 
   .panel {
     position: fixed; top: 20px; left: 20px;
     background: var(--panel);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 18px 22px;
     min-width: 240px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   }
   .panel h1 {
-    font-size: 14px; font-weight: 600;
-    letter-spacing: 0.08em; text-transform: uppercase;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 10px;
   }
   .panel .filename { font-size: 15px; font-weight: 500; margin-bottom: 6px; word-break: break-all; }
-  .panel .stats { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .panel .stats { font-size: 12px; color: var(--muted); line-height: 1.7; }
 
   .controls {
     position: fixed; bottom: 20px; left: 50%;
     transform: translateX(-50%);
     background: var(--panel);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px 16px;
     display: flex; gap: 16px;
     font-size: 12px; color: var(--muted);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   }
   .controls span strong { color: var(--text); font-weight: 600; }
 
@@ -91,57 +98,88 @@
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // ========== HIER DEINE STL-DATEI EINTRAGEN ==========
 const STL_URL = 'volume-18-skulptur.stl';
 // ====================================================
 
 const container = document.getElementById('canvas-container');
-
-// Szene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0f1419);
+
+// Gradient-Hintergrund (oben heller, unten dunkler)
+function createGradientTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 2;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+  gradient.addColorStop(0, '#2a3340');
+  gradient.addColorStop(0.5, '#151a22');
+  gradient.addColorStop(1, '#0a0d12');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 2, 512);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+scene.background = createGradientTexture();
 
 // Kamera
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
 camera.position.set(150, 120, 200);
 
-// Renderer
+// Renderer mit Tone Mapping
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 container.appendChild(renderer.domElement);
 
-// Licht
-const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-scene.add(ambient);
+// Environment Map für realistische Reflexionen
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
-keyLight.position.set(100, 200, 100);
+// Drei-Punkt-Beleuchtung (Foto-Studio-Setup)
+const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.2);
+keyLight.position.set(120, 200, 100);
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048, 2048);
 keyLight.shadow.camera.left = -200;
 keyLight.shadow.camera.right = 200;
 keyLight.shadow.camera.top = 200;
 keyLight.shadow.camera.bottom = -200;
+keyLight.shadow.bias = -0.0005;
+keyLight.shadow.radius = 4;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.3);
-fillLight.position.set(-100, 50, -100);
+const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.6);
+fillLight.position.set(-120, 80, -80);
 scene.add(fillLight);
 
-// Bodenebene
+const rimLight = new THREE.DirectionalLight(0xffffff, 1.2);
+rimLight.position.set(0, 100, -150);
+scene.add(rimLight);
+
+const ambient = new THREE.AmbientLight(0x404850, 0.3);
+scene.add(ambient);
+
+// Schattenboden
 const groundGeo = new THREE.PlaneGeometry(1000, 1000);
-const groundMat = new THREE.ShadowMaterial({ opacity: 0.25 });
+const groundMat = new THREE.ShadowMaterial({ opacity: 0.45 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Gitter (dezent)
-const grid = new THREE.GridHelper(400, 20, 0x2a3138, 0x1a1f24);
+// Dezentes Gitter
+const grid = new THREE.GridHelper(600, 30, 0x3a4352, 0x252b36);
+grid.material.transparent = true;
+grid.material.opacity = 0.5;
 scene.add(grid);
 
 // Steuerung
@@ -160,22 +198,22 @@ filenameEl.textContent = STL_URL.split('/').pop();
 loader.load(
   STL_URL,
   (geometry) => {
-    // Tinkercad verwendet Z-up, Three.js verwendet Y-up
-    // Rotation um -90° um X-Achse korrigiert die Orientierung
+    // Tinkercad Z-up zu Three.js Y-up
     geometry.rotateX(-Math.PI / 2);
 
     geometry.computeBoundingBox();
     geometry.computeVertexNormals();
 
-    // Zentrieren (auch vertikal - wie Tinkercad)
     const bbox = geometry.boundingBox;
     const center = bbox.getCenter(new THREE.Vector3());
     geometry.translate(-center.x, -center.y, -center.z);
 
+    // Edles Material - leichter Metallschimmer
     const material = new THREE.MeshStandardMaterial({
-      color: 0x7dd3c0,
-      metalness: 0.1,
-      roughness: 0.4,
+      color: 0xb8c5cc,
+      metalness: 0.4,
+      roughness: 0.35,
+      envMapIntensity: 1.2,
       flatShading: false
     });
     const mesh = new THREE.Mesh(geometry, material);
@@ -183,7 +221,6 @@ loader.load(
     mesh.receiveShadow = true;
     scene.add(mesh);
 
-    // Kamera automatisch positionieren
     const size = bbox.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
     const dist = maxDim * 2.2;
@@ -191,11 +228,9 @@ loader.load(
     controls.target.set(0, 0, 0);
     controls.update();
 
-    // Ground und Gitter unter das Objekt legen (halbe Höhe nach unten)
     ground.position.y = -size.y / 2;
     grid.position.y = -size.y / 2;
 
-    // Stats anzeigen
     const triangles = geometry.attributes.position.count / 3;
     statsEl.innerHTML = `
       Dreiecke: ${triangles.toLocaleString('de-CH')}<br>
@@ -216,14 +251,12 @@ loader.load(
   }
 );
 
-// Resize
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Animate
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
