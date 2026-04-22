@@ -3,79 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D-Werkstatt</title>
+<title>Platonische Körper · 3D-Werkstatt</title>
+<link rel="stylesheet" href="shared.css">
 <style>
-  :root {
-    --panel: rgba(255,255,255,0.06);
-    --border: rgba(255,255,255,0.12);
-    --text: #f0f0f0;
-    --muted: #8a9199;
-    --accent: #7dd3c0;
-    --accent-dim: rgba(125, 211, 192, 0.15);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-  html { scroll-behavior: smooth; }
-  body {
-    min-height: 100vh;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    color: var(--text);
-    background: #0a0d12;
-    background-image:
-      radial-gradient(ellipse at top left, rgba(125, 211, 192, 0.08), transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(100, 150, 220, 0.06), transparent 50%),
-      linear-gradient(180deg, #1a2030 0%, #0a0d12 60%);
-    background-attachment: fixed;
-    overflow-x: hidden;
-  }
-
-  .hero {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 80px 32px 40px;
-    text-align: center;
-  }
-  .eyebrow {
-    display: inline-block;
-    padding: 6px 14px;
-    background: var(--accent-dim);
-    border: 1px solid rgba(125, 211, 192, 0.3);
-    color: var(--accent);
-    border-radius: 100px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-bottom: 24px;
-  }
-  .hero h1 {
-    font-size: clamp(40px, 7vw, 72px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.05;
-    margin-bottom: 20px;
-    background: linear-gradient(180deg, #ffffff 0%, #c8d2de 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .hero p {
-    font-size: 17px;
-    color: var(--muted);
-    max-width: 560px;
-    margin: 0 auto;
-    line-height: 1.6;
-  }
+  /* Back-Link mehr Abstand zum Hero bei dieser Seite */
+  body { padding-top: 0; }
 
   .grid {
-    max-width: 1100px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 40px 32px 80px;
+    padding: 40px 32px 40px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
   }
+  @media (max-width: 1400px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 900px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px)  { .grid { grid-template-columns: 1fr; padding: 24px 20px; gap: 16px; } }
 
-  .card {
+  .solid-card {
     position: relative;
     background: var(--panel);
     backdrop-filter: blur(16px) saturate(140%);
@@ -83,130 +29,353 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     overflow: hidden;
-    cursor: pointer;
-    text-decoration: none;
-    color: inherit;
     display: flex;
     flex-direction: column;
   }
 
-  .card-thumb {
-    aspect-ratio: 16 / 10;
+  .solid-viewer {
+    aspect-ratio: 1 / 1;
     position: relative;
-    background: linear-gradient(135deg, #1a2030 0%, #0f141a 100%);
-    overflow: hidden;
+    background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    cursor: grab;
+    transition: background 0.3s;
   }
-  .card-thumb canvas {
-    width: 100%;
-    height: 100%;
-    display: block;
-  }
-  .card-thumb::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 60%, rgba(10, 13, 18, 0.5) 100%);
-    pointer-events: none;
-  }
+  .solid-viewer:active { cursor: grabbing; }
+  .solid-viewer canvas { width: 100%; height: 100%; display: block; }
 
-  .card-body {
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+  .solid-body {
+    padding: 18px 18px 20px;
   }
-  .card h2 {
-    font-size: 20px;
+  .solid-name {
+    font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    margin: 0;
+    margin-bottom: 2px;
   }
-  .card-arrow {
-    display: inline-flex;
-    align-items: center;
+  .solid-alt {
+    font-size: 11px;
     color: var(--muted);
-    transition: transform 0.2s, color 0.2s;
-    flex-shrink: 0;
-  }
-  .card-arrow svg {
-    width: 18px;
-    height: 18px;
+    margin-bottom: 14px;
+    font-style: italic;
   }
 
-  .footer {
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .stat {
+    background: rgba(125, 211, 192, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 2px;
     text-align: center;
-    padding: 40px 32px 60px;
-    color: var(--muted);
-    font-size: 12px;
-    border-top: 1px solid var(--border);
-    margin-top: 40px;
   }
-  .footer a {
+  body.light .stat { background: rgba(125, 211, 192, 0.08); }
+  .stat-num {
+    font-size: 16px;
+    font-weight: 700;
     color: var(--accent);
-    text-decoration: none;
+    line-height: 1.2;
   }
-  .footer a:hover { text-decoration: underline; }
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .euler {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 0 0;
+    font-family: 'Courier New', monospace;
+  }
+  .euler strong { color: var(--text); font-weight: 600; }
+
+  .info-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px 32px 60px;
+  }
+  .info-box {
+    background: var(--panel);
+    backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+  }
+  .info-box h2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+  }
+  .info-box p {
+    color: var(--muted);
+    line-height: 1.7;
+    font-size: 15px;
+    margin-bottom: 14px;
+  }
+  .info-box p:last-child { margin-bottom: 0; }
+  .info-box strong { color: var(--text); font-weight: 600; }
+  .info-box .formula {
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  /* Modal für Grossansicht */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 7, 12, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  body.light .modal-overlay {
+    background: rgba(240, 243, 247, 0.85);
+  }
+  .modal-overlay.active { display: flex; opacity: 1; }
+
+  .modal-content {
+    position: relative;
+    width: min(90vw, 900px);
+    max-height: 90vh;
+    background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    transform: scale(0.96);
+    transition: transform 0.25s ease;
+  }
+  .modal-overlay.active .modal-content { transform: scale(1); }
+
+  .modal-viewer {
+    position: relative;
+    background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    cursor: grab;
+    min-height: 500px;
+  }
+  .modal-viewer:active { cursor: grabbing; }
+  .modal-viewer canvas { width: 100%; height: 100%; display: block; }
+
+  .modal-info {
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+  }
+  .modal-info h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .modal-info .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+  .modal-info .stats { gap: 10px; margin-bottom: 18px; }
+  .modal-info .stat { border-radius: 12px; padding: 14px 8px; }
+  .modal-info .stat-num { font-size: 28px; }
+  .modal-info .stat-label { font-size: 10px; margin-top: 4px; }
+  .modal-info .euler { font-size: 13px; padding: 14px 0 0; }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .modal-close:hover {
+    border-color: var(--accent-border);
+  }
+  .modal-close svg { width: 16px; height: 16px; }
+
+  @media (max-width: 720px) {
+    .modal-content {
+      grid-template-columns: 1fr;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-viewer { min-height: 320px; }
+    .modal-info { padding: 24px; }
+    .modal-info h2 { font-size: 26px; }
+  }
 
   @media (max-width: 640px) {
-    .hero { padding: 56px 20px 32px; }
-    .hero h1 { font-size: 38px; }
-    .hero p { font-size: 15px; }
-    .grid { padding: 24px 20px 60px; gap: 16px; }
-    .card-body { padding: 18px 20px; }
-    .card h2 { font-size: 18px; }
+    .info-section { padding: 20px 20px 40px; }
+    .info-box { padding: 24px; }
   }
 </style>
+<script src="shared.js" defer></script>
 </head>
 <body>
 
-<section class="hero">
-  <h1>3D-Werkstatt</h1>
+<!-- Back-Link (oben links) -->
+<a href="index.html" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M19 12H5M11 18l-6-6 6-6"/>
+  </svg>
+  Werkstatt
+</a>
+
+<!-- Theme-Toggle (oben rechts) -->
+<button class="theme-toggle" data-theme-toggle aria-label="Hell/Dunkel umschalten">
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+  </svg>
+</button>
+
+<section class="hero compact">
+  <span class="eyebrow">Geometrie · NaTech</span>
+  <h1>Platonische Körper</h1>
+  <p>Die fünf regelmässigen Polyeder – zum Drehen, Vergleichen und Staunen. Seit Platon bekannt, seit Euklid bewiesen, und es gibt genau diese fünf.</p>
 </section>
 
-<div class="grid">
+<div class="grid" id="grid">
 
-  <a href="volume-18.html" class="card">
-    <div class="card-thumb" data-thumb="skulptur"></div>
-    <div class="card-body">
-      <h2>Volume 18</h2>
-      <span class="card-arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M5 12h14M13 6l6 6-6 6"/>
-        </svg>
-      </span>
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="tetraeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Tetraeder</div>
+      <div class="solid-alt">4 Flächen aus gleichseitigen Dreiecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">4</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">4</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">6</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 4 + 4 − 6 = <strong>2</strong></div>
     </div>
-  </a>
+  </div>
 
-  <a href="platonische-koerper.html" class="card">
-    <div class="card-thumb" data-thumb="platonic"></div>
-    <div class="card-body">
-      <h2>Platonische Körper</h2>
-      <span class="card-arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M5 12h14M13 6l6 6-6 6"/>
-        </svg>
-      </span>
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="hexaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Hexaeder</div>
+      <div class="solid-alt">6 Flächen aus Quadraten</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">6</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">8</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 6 + 8 − 12 = <strong>2</strong></div>
     </div>
-  </a>
+  </div>
 
-  <a href="3D-viewer.html" class="card">
-    <div class="card-thumb" data-thumb="viewer"></div>
-    <div class="card-body">
-      <h2>3D-Viewer</h2>
-      <span class="card-arrow">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M5 12h14M13 6l6 6-6 6"/>
-        </svg>
-      </span>
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="oktaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Oktaeder</div>
+      <div class="solid-alt">8 Flächen aus gleichseitigen Dreiecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">8</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">6</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 8 + 6 − 12 = <strong>2</strong></div>
     </div>
-  </a>
+  </div>
+
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="dodekaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Dodekaeder</div>
+      <div class="solid-alt">12 Flächen aus regelmässigen Fünfecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">20</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">30</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 12 + 20 − 30 = <strong>2</strong></div>
+    </div>
+  </div>
+
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="ikosaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Ikosaeder</div>
+      <div class="solid-alt">20 Flächen aus gleichseitigen Dreiecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">20</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">30</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 20 + 12 − 30 = <strong>2</strong></div>
+    </div>
+  </div>
 
 </div>
+
+<section class="info-section">
+  <div class="info-box">
+    <h2>Die Eulersche Polyederformel</h2>
+    <p>Bei allen fünf platonischen Körpern – und bei jedem konvexen Polyeder überhaupt – gilt: <span class="formula">F + E − K = 2</span></p>
+    <p>Wobei <strong>F</strong> die Anzahl Flächen, <strong>E</strong> die Anzahl Ecken und <strong>K</strong> die Anzahl Kanten ist. Entdeckt von Leonhard Euler im 18. Jahrhundert. Einfach nachzuprüfen – und trotzdem eines der elegantesten Ergebnisse der Geometrie.</p>
+    <p>Warum gibt es genau fünf? Weil an jeder Ecke mindestens drei Flächen zusammenstossen müssen und die Winkelsumme dort kleiner als 360° sein muss. Rechnet man das mit regelmässigen Vielecken durch, bleiben genau diese fünf Möglichkeiten übrig.</p>
+  </div>
+</section>
 
 <footer class="footer">
   © Raphael Fisch 2026
 </footer>
+
+<!-- Modal für Grossansicht -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose" aria-label="Schliessen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+    <div class="modal-viewer" id="modalViewer"></div>
+    <div class="modal-info">
+      <h2 id="modalTitle">Körper</h2>
+      <div class="subtitle" id="modalSubtitle">Beschreibung</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num" id="modalFlaechen">-</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num" id="modalEcken">-</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num" id="modalKanten">-</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler" id="modalEuler">F + E − K = <strong>2</strong></div>
+    </div>
+  </div>
+</div>
+
 
 <script type="importmap">
 {
@@ -219,19 +388,63 @@
 
 <script type="module">
 import * as THREE from 'three';
-import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-function createThumbnail(container, type) {
+const SOLIDS = {
+  tetraeder: {
+    name: 'Tetraeder',
+    subtitle: '4 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 4, kanten: 6, ecken: 4,
+    geometry: () => new THREE.TetrahedronGeometry(1.4)
+  },
+  hexaeder: {
+    name: 'Hexaeder',
+    subtitle: '6 Flächen aus Quadraten',
+    flaechen: 6, kanten: 12, ecken: 8,
+    geometry: () => new THREE.BoxGeometry(1.9, 1.9, 1.9)
+  },
+  oktaeder: {
+    name: 'Oktaeder',
+    subtitle: '8 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 8, kanten: 12, ecken: 6,
+    geometry: () => new THREE.OctahedronGeometry(1.4)
+  },
+  dodekaeder: {
+    name: 'Dodekaeder',
+    subtitle: '12 Flächen aus regelmässigen Fünfecken',
+    flaechen: 12, kanten: 30, ecken: 20,
+    geometry: () => new THREE.DodecahedronGeometry(1.3)
+  },
+  ikosaeder: {
+    name: 'Ikosaeder',
+    subtitle: '20 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 20, kanten: 30, ecken: 12,
+    geometry: () => new THREE.IcosahedronGeometry(1.3)
+  }
+};
+
+let sharedEnvTexture = null;
+function getEnvironmentTexture(renderer) {
+  if (!sharedEnvTexture) {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    sharedEnvTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  }
+  return sharedEnvTexture;
+}
+
+function createViewer(container, solidName, opts = {}) {
+  const { onClick = null, cameraDistance = 1 } = opts;
+
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(45, 16/10, 0.1, 100);
-  camera.position.set(5, 3.5, 6);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  const camScale = cameraDistance;
+  camera.position.set(3.5 * camScale, 2.5 * camScale, 4 * camScale);
   camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 1.15;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const resize = () => {
@@ -245,108 +458,174 @@ function createThumbnail(container, type) {
   container.appendChild(renderer.domElement);
   resize();
 
-  const pmremGenerator = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = getEnvironmentTexture(renderer);
 
-  const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+  const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.4);
   keyLight.position.set(3, 5, 3);
   scene.add(keyLight);
-  const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.5);
+  const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.4);
   fillLight.position.set(-3, 2, -2);
   scene.add(fillLight);
-  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.35);
   scene.add(ambient);
 
   const material = new THREE.MeshStandardMaterial({
     color: 0x7dd3c0,
-    metalness: 0.5,
-    roughness: 0.3,
-    envMapIntensity: 1.2
+    metalness: 0.55,
+    roughness: 0.28,
+    envMapIntensity: 1.3
   });
 
   const group = new THREE.Group();
-
-  if (type === 'skulptur') {
-    // Echte STL-Datei der Volume-18-Skulptur laden
-    const loader = new STLLoader();
-    loader.load('volume-18-skulptur.stl', (geometry) => {
-      geometry.rotateX(-Math.PI / 2);
-      geometry.computeBoundingBox();
-      geometry.computeVertexNormals();
-
-      const bbox = geometry.boundingBox;
-      const center = bbox.getCenter(new THREE.Vector3());
-      geometry.translate(-center.x, -center.y, -center.z);
-
-      const size = bbox.getSize(new THREE.Vector3());
-      const scale = 3 / Math.max(size.x, size.y, size.z);
-      geometry.scale(scale, scale, scale);
-
-      const mesh = new THREE.Mesh(geometry, material);
-      group.add(mesh);
-    });
-
-  } else if (type === 'platonic') {
-    // Alle fünf platonischen Körper rotierend nebeneinander
-    const solids = [
-      new THREE.TetrahedronGeometry(0.55),
-      new THREE.BoxGeometry(0.85, 0.85, 0.85),
-      new THREE.OctahedronGeometry(0.6),
-      new THREE.DodecahedronGeometry(0.55),
-      new THREE.IcosahedronGeometry(0.55)
-    ];
-    const spacing = 1.45;
-    const startX = -spacing * 2;
-
-    solids.forEach((geo, i) => {
-      const subGroup = new THREE.Group();
-      const mesh = new THREE.Mesh(geo, material);
-      subGroup.add(mesh);
-      const edges = new THREE.EdgesGeometry(geo);
-      const lineMat = new THREE.LineBasicMaterial({
-        color: 0xffffff, transparent: true, opacity: 0.3
-      });
-      subGroup.add(new THREE.LineSegments(edges, lineMat));
-      subGroup.position.x = startX + i * spacing;
-      subGroup.userData.phase = i * 0.7;
-      group.add(subGroup);
-    });
-
-    // Kamera etwas weiter weg für die Reihe
-    camera.position.set(0, 1.5, 7);
-    camera.lookAt(0, 0, 0);
-
-  } else if (type === 'viewer') {
-    // Torusknoten – klar nicht-platonisch, organisch-komplex
-    const geo = new THREE.TorusKnotGeometry(0.85, 0.3, 128, 24);
-    const mesh = new THREE.Mesh(geo, material);
-    group.add(mesh);
-  }
-
   scene.add(group);
 
-  function animate() {
-    requestAnimationFrame(animate);
-    const speed = 0.005;
-    if (type === 'platonic') {
-      // Alle fünf Körper rotieren mit gleicher Geschwindigkeit,
-      // phasenversetzte Kippbewegung bleibt für visuelles Leben
-      group.children.forEach((child) => {
-        child.rotation.y += speed;
-        child.rotation.x = Math.sin(Date.now() * 0.0005 + child.userData.phase) * 0.3;
-      });
-    } else {
-      group.rotation.y += speed;
+  const geo = SOLIDS[solidName].geometry();
+  const mesh = new THREE.Mesh(geo, material);
+  group.add(mesh);
+
+  const edges = new THREE.EdgesGeometry(geo);
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.3
+  });
+  group.add(new THREE.LineSegments(edges, lineMat));
+
+  // Edge-Farbe bei Hell-Theme anpassen (dunkle Linien auf hellem Grund)
+  const applyThemeToLines = (theme) => {
+    lineMat.color.set(theme === 'light' ? 0x1a2030 : 0xffffff);
+    lineMat.opacity = theme === 'light' ? 0.35 : 0.3;
+  };
+  applyThemeToLines(window.WerkstattTheme?.get() || 'dark');
+  window.WerkstattTheme?.onChange(applyThemeToLines);
+
+  // Interaktion: Klick vs. Drag unterscheiden
+  let isPointerDown = false;
+  let didDrag = false;
+  let downX = 0, downY = 0;
+  let prevX = 0, prevY = 0;
+  let manualYawOffset = 0;
+  let manualPitch = 0;
+  const DRAG_THRESHOLD = 5;
+
+  const getXY = (e) => ({
+    x: e.clientX ?? e.touches?.[0]?.clientX ?? 0,
+    y: e.clientY ?? e.touches?.[0]?.clientY ?? 0
+  });
+
+  const onPointerDown = (e) => {
+    isPointerDown = true;
+    didDrag = false;
+    const { x, y } = getXY(e);
+    downX = prevX = x;
+    downY = prevY = y;
+  };
+  const onPointerMove = (e) => {
+    if (!isPointerDown) return;
+    const { x, y } = getXY(e);
+    const dx = x - downX;
+    const dy = y - downY;
+    if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) didDrag = true;
+    if (didDrag) {
+      manualYawOffset += (x - prevX) * 0.01;
+      manualPitch += (y - prevY) * 0.01;
+      manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
     }
+    prevX = x;
+    prevY = y;
+  };
+  const onPointerUp = () => {
+    if (isPointerDown && !didDrag && onClick) onClick();
+    isPointerDown = false;
+  };
+
+  container.addEventListener('mousedown', onPointerDown);
+  container.addEventListener('touchstart', onPointerDown, { passive: true });
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('touchmove', onPointerMove, { passive: true });
+  window.addEventListener('mouseup', onPointerUp);
+  window.addEventListener('touchend', onPointerUp);
+
+  let autoYaw = 0;
+  let running = true;
+
+  function animate() {
+    if (!running) return;
+    requestAnimationFrame(animate);
+    autoYaw += 0.005;
+    group.rotation.y = autoYaw + manualYawOffset;
+    group.rotation.x = manualPitch + Math.sin(Date.now() * 0.0003) * 0.15;
     renderer.render(scene, camera);
   }
   animate();
 
-  new ResizeObserver(() => requestAnimationFrame(resize)).observe(container);
+  const resizeObs = new ResizeObserver(() => requestAnimationFrame(resize));
+  resizeObs.observe(container);
+
+  return {
+    dispose() {
+      running = false;
+      resizeObs.disconnect();
+      container.removeEventListener('mousedown', onPointerDown);
+      container.removeEventListener('touchstart', onPointerDown);
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchend', onPointerUp);
+      geo.dispose();
+      edges.dispose();
+      material.dispose();
+      lineMat.dispose();
+      renderer.dispose();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+    }
+  };
 }
 
-document.querySelectorAll('[data-thumb]').forEach(el => {
-  createThumbnail(el, el.dataset.thumb);
+// Modal-Logik
+const modal = document.getElementById('modal');
+const modalClose = document.getElementById('modalClose');
+const modalViewer = document.getElementById('modalViewer');
+let modalViewerInstance = null;
+
+function openModal(solidName) {
+  const data = SOLIDS[solidName];
+  document.getElementById('modalTitle').textContent = data.name;
+  document.getElementById('modalSubtitle').textContent = data.subtitle;
+  document.getElementById('modalFlaechen').textContent = data.flaechen;
+  document.getElementById('modalKanten').textContent = data.kanten;
+  document.getElementById('modalEcken').textContent = data.ecken;
+  document.getElementById('modalEuler').innerHTML =
+    `F + E − K = ${data.flaechen} + ${data.ecken} − ${data.kanten} = <strong>2</strong>`;
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  requestAnimationFrame(() => {
+    modalViewerInstance = createViewer(modalViewer, solidName, { cameraDistance: 1.1 });
+  });
+}
+
+function closeModal() {
+  modal.classList.remove('active');
+  document.body.style.overflow = '';
+  if (modalViewerInstance) {
+    modalViewerInstance.dispose();
+    modalViewerInstance = null;
+  }
+}
+
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+});
+
+document.querySelectorAll('[data-solid]').forEach(el => {
+  const name = el.dataset.solid;
+  createViewer(el, name, { onClick: () => openModal(name) });
 });
 </script>
 
