@@ -660,8 +660,10 @@ function createCutViewer(container, cutName, opts = {}) {
   // Animations-State
   let exploded = 0;       // aktuelle Position (0 = zusammen, 1 = auseinander)
   let targetExploded = 0; // Zielwert
-  let manualYawOffset = interactive ? -0.4 : 0; // leicht schräger Start im Modal
-  let manualPitch = interactive ? -0.3 : 0;
+  // Beide Modi (Kachel und Modal): leicht schräger Start, damit die 3D-Form
+  // sofort erkennbar ist. Früher rotierten Kacheln automatisch, jetzt stehen sie still.
+  let manualYawOffset = -0.4;
+  let manualPitch = -0.25;
 
   // Event-Handler werden hier gesammelt, damit dispose() sie entfernen kann
   const windowListeners = [];
@@ -727,7 +729,6 @@ function createCutViewer(container, cutName, opts = {}) {
     addWindowListener('touchend', onUp);
   }
 
-  let autoYaw = 0;
   let running = true;
   function animate() {
     if (!running) return;
@@ -748,14 +749,9 @@ function createCutViewer(container, cutName, opts = {}) {
     part1Group.position.copy(explosionDir1).multiplyScalar(exploded * EXPLOSION_DIST);
     part2Group.position.copy(explosionDir2).multiplyScalar(exploded * EXPLOSION_DIST);
 
-    // Rotation: Im Kachel-Modus läuft die Auto-Rotation, im Modal-Modus
-    // nicht (sonst wäre es schwer, eine Position zum Betrachten zu halten).
-    // Manuelle Drag-Rotation wird in beiden Modi überlagert.
-    if (!interactive) {
-      autoYaw += 0.004;
-    }
-    rotationGroup.rotation.y = autoYaw + manualYawOffset;
-    rotationGroup.rotation.x = manualPitch + (interactive ? 0 : Math.sin(Date.now() * 0.0003) * 0.12);
+    // Keine Auto-Rotation mehr: Würfel steht still, nur Drag-Rotation greift.
+    rotationGroup.rotation.y = manualYawOffset;
+    rotationGroup.rotation.x = manualPitch;
 
     renderer.render(scene, camera);
   }
