@@ -576,6 +576,8 @@ function createViewer(container, solidName, opts = {}) {
     const dy = y - downY;
     if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) didDrag = true;
     if (didDrag) {
+      // Während aktivem Drag Seiten-Scroll verhindern
+      if (e.cancelable) e.preventDefault();
       manualYawOffset += (x - prevX) * 0.01;
       manualPitch += (y - prevY) * 0.01;
       manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
@@ -591,7 +593,8 @@ function createViewer(container, solidName, opts = {}) {
   container.addEventListener('mousedown', onPointerDown);
   container.addEventListener('touchstart', onPointerDown, { passive: true });
   window.addEventListener('mousemove', onPointerMove);
-  window.addEventListener('touchmove', onPointerMove, { passive: true });
+  // touchmove NICHT passive, damit preventDefault während Drag funktioniert
+  window.addEventListener('touchmove', onPointerMove, { passive: false });
   window.addEventListener('mouseup', onPointerUp);
   window.addEventListener('touchend', onPointerUp);
 
