@@ -595,15 +595,17 @@ function createViewer(container, solidName, opts = {}) {
   window.addEventListener('mouseup', onPointerUp);
   window.addEventListener('touchend', onPointerUp);
 
-  let autoYaw = 0;
   let running = true;
+
+  // Start-Rotation leicht schräg, damit die 3D-Form sofort erkennbar ist
+  manualYawOffset = -0.4;
+  manualPitch = -0.25;
 
   function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
-    autoYaw += 0.005;
-    group.rotation.y = autoYaw + manualYawOffset;
-    group.rotation.x = manualPitch + Math.sin(Date.now() * 0.0003) * 0.15;
+    group.rotation.y = manualYawOffset;
+    group.rotation.x = manualPitch;
     renderer.render(scene, camera);
   }
   animate();
