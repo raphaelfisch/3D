@@ -36,6 +36,7 @@
     background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     cursor: pointer;
     transition: background 0.3s;
+    touch-action: none;
   }
   .cut-viewer canvas { width: 100%; height: 100%; display: block; }
 
@@ -93,6 +94,7 @@
     position: relative;
     background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     cursor: pointer;
+    touch-action: none;
   }
   .cube-modal-viewer canvas { width: 100%; height: 100%; display: block; }
 
@@ -684,7 +686,7 @@ function createCutViewer(container, cutName, opts = {}) {
     // Touch hat höhere Schwelle, damit leichtes Fingerzittern beim Tippen
     // nicht als Drag fehlinterpretiert wird. Maus ist präziser.
     const DRAG_THRESHOLD_MOUSE = 5;
-    const DRAG_THRESHOLD_TOUCH = 12;
+    const DRAG_THRESHOLD_TOUCH = 20;
     const getXY = (e) => ({
       x: e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0,
       y: e.clientY ?? e.touches?.[0]?.clientY ?? e.changedTouches?.[0]?.clientY ?? 0
@@ -740,7 +742,8 @@ function createCutViewer(container, cutName, opts = {}) {
 
     if (interactive) {
       // Sanfte Interpolation zum Ziel-Explosionsgrad
-      exploded += (targetExploded - exploded) * 0.12;
+      // Schnelle Interpolation zum Ziel-Explosionsgrad (direkter Feedback)
+      exploded += (targetExploded - exploded) * 0.25;
     } else {
       // Auto-Mode: pulsieren zwischen 0 und 1
       const t = Date.now() * 0.0008;
