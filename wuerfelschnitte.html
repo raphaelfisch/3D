@@ -707,6 +707,9 @@ function createCutViewer(container, cutName, opts = {}) {
       const threshold = isTouch ? DRAG_THRESHOLD_TOUCH : DRAG_THRESHOLD_MOUSE;
       if (!didDrag && Math.hypot(dx, dy) > threshold) didDrag = true;
       if (didDrag) {
+        // Während aktivem Drag verhindern wir, dass die Seite mitscrollt.
+        // Nur möglich, weil der Listener non-passive registriert ist.
+        if (e.cancelable) e.preventDefault();
         manualYawOffset += (x - prevX) * 0.01;
         manualPitch += (y - prevY) * 0.01;
         manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
@@ -724,7 +727,8 @@ function createCutViewer(container, cutName, opts = {}) {
       isPointerDown = false;
     };
     addWindowListener('mousemove', onMove);
-    addWindowListener('touchmove', onMove, { passive: true });
+    // touchmove NICHT passive, damit preventDefault während Drag funktioniert
+    addWindowListener('touchmove', onMove, { passive: false });
     addWindowListener('mouseup', onUp);
     addWindowListener('touchend', onUp);
   }
