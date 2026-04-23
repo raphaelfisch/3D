@@ -567,22 +567,72 @@ function createCutViewer(container, cutName, opts = {}) {
     const edges2 = new THREE.EdgesGeometry(mirroredGeom, 20);
     part2Group.add(new THREE.LineSegments(edges2, lineMat));
 
-    // Richtungen berechnen: Schwerpunkt jedes Teils im Würfel-Koordinatensystem
-    // relativ zum Würfelmittelpunkt. Wir nehmen die Geometrie-Bbox als Näherung.
-    geom.computeBoundingBox();
-    const bbox = geom.boundingBox;
-    const center1 = bbox.getCenter(new THREE.Vector3());
-    const dir1 = center1.clone().sub(CUBE_CENTER).normalize();
-    // Teil 2 hat durch Punktspiegelung den gegenüberliegenden Schwerpunkt
-    explosionDir1.copy(dir1);
-    explosionDir2.copy(dir1).negate();
-
-    // Falls dir1 ≈ 0 (seltener Fall), fallback auf Y-Achse
-    if (explosionDir1.length() < 0.01) {
-      explosionDir1.set(0, 1, 0);
-      explosionDir2.set(0, -1, 0);
+    // Explosions-Richtung: senkrecht zur Schnittfläche (nicht Schwerpunkt-Richtung,
+    // weil diese bei schrägen Schnitten wie BD seitlich aneinander vorbei geht).
+    // Schnittfläche = nicht-achsenparallele Dreiecke des Teils.
+    const cutDir = findCutPlaneNormal(geom, CUBE_CENTER);
+    if (cutDir) {
+      // cutDir zeigt von Teil 1 aus nach aussen zum Gegenstück.
+      // Teil 1 soll sich aber in Gegenrichtung bewegen (weg vom Gegenstück).
+      explosionDir1.copy(cutDir).negate();
+      explosionDir2.copy(cutDir);
+    } else {
+      // Fallback für achsenparallele Schnitte (wie EG): Schwerpunkt-Richtung
+      geom.computeBoundingBox();
+      const center1 = geom.boundingBox.getCenter(new THREE.Vector3());
+      const dir1 = center1.clone().sub(CUBE_CENTER).normalize();
+      if (dir1.length() < 0.01) dir1.set(0, 1, 0);
+      explosionDir1.copy(dir1);
+      explosionDir2.copy(dir1).negate();
     }
   });
+
+  // Schnittflächen-Normale finden: Dreiecke mit nicht-achsenparalleler Normale
+  // gehören zur Schnittfläche. Deren gemittelte Normale ist die Schnittebenen-
+  // Normale, zeigt vom Teil-Schwerpunkt weg (zur anderen Hälfte hin).
+  function findCutPlaneNormal(geometry, cubeCenter) {
+    const pos = geometry.attributes.position;
+    const triCount = pos.count / 3;
+
+    // Teil-Schwerpunkt für die Orientierungs-Prüfung
+    let sx = 0, sy = 0, sz = 0;
+    for (let i = 0; i < pos.count; i++) {
+      sx += pos.getX(i); sy += pos.getY(i); sz += pos.getZ(i);
+    }
+    sx /= pos.count; sy /= pos.count; sz /= pos.count;
+
+    const cutNormal = new THREE.Vector3();
+    let cutCount = 0;
+    const v0 = new THREE.Vector3(), v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
+    const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), n = new THREE.Vector3();
+
+    for (let i = 0; i < triCount; i++) {
+      v0.fromBufferAttribute(pos, i*3);
+      v1.fromBufferAttribute(pos, i*3+1);
+      v2.fromBufferAttribute(pos, i*3+2);
+      e1.subVectors(v1, v0);
+      e2.subVectors(v2, v0);
+      n.crossVectors(e1, e2).normalize();
+
+      // Ist die Normale achsenparallel? (zwei Komponenten nahe 0)
+      const eps = 0.02;
+      const zeros = (Math.abs(n.x) < eps ? 1 : 0) + (Math.abs(n.y) < eps ? 1 : 0) + (Math.abs(n.z) < eps ? 1 : 0);
+      if (zeros >= 2) continue; // achsenparallel → Würfel-Aussenfläche
+
+      // Schnittfläche gefunden. Normale nach aussen orientieren:
+      // Sie soll vom Teil-Schwerpunkt weg zeigen.
+      const tcx = (v0.x + v1.x + v2.x) / 3 - sx;
+      const tcy = (v0.y + v1.y + v2.y) / 3 - sy;
+      const tcz = (v0.z + v1.z + v2.z) / 3 - sz;
+      if (n.x*tcx + n.y*tcy + n.z*tcz < 0) n.negate();
+
+      cutNormal.add(n);
+      cutCount++;
+    }
+
+    if (cutCount === 0) return null; // Keine schräge Fläche gefunden
+    return cutNormal.divideScalar(cutCount).normalize();
+  }
 
   // Hilfsfunktion: Geometrie am Punkt p punktspiegeln und Dreiecke korrekt orientieren
   function mirrorGeometryAtPoint(sourceGeom, p) {
@@ -611,8 +661,8 @@ function createCutViewer(container, cutName, opts = {}) {
   // Animations-State
   let exploded = 0;       // aktuelle Position (0 = zusammen, 1 = auseinander)
   let targetExploded = 0; // Zielwert
-  let manualYawOffset = 0;  // vom User hinzugefügte Y-Rotation (Drag)
-  let manualPitch = 0;      // vom User hinzugefügte X-Rotation (Kippen)
+  let manualYawOffset = interactive ? -0.4 : 0; // leicht schräger Start im Modal
+  let manualPitch = interactive ? -0.3 : 0;
 
   // Event-Handler werden hier gesammelt, damit dispose() sie entfernen kann
   const windowListeners = [];
@@ -694,10 +744,14 @@ function createCutViewer(container, cutName, opts = {}) {
     part1Group.position.copy(explosionDir1).multiplyScalar(exploded * EXPLOSION_DIST);
     part2Group.position.copy(explosionDir2).multiplyScalar(exploded * EXPLOSION_DIST);
 
-    // Rotation: Auto-Rotation auf Y + manuelle Überlagerung durch Drag
-    autoYaw += 0.004;
+    // Rotation: Im Kachel-Modus läuft die Auto-Rotation, im Modal-Modus
+    // nicht (sonst wäre es schwer, eine Position zum Betrachten zu halten).
+    // Manuelle Drag-Rotation wird in beiden Modi überlagert.
+    if (!interactive) {
+      autoYaw += 0.004;
+    }
     rotationGroup.rotation.y = autoYaw + manualYawOffset;
-    rotationGroup.rotation.x = manualPitch + Math.sin(Date.now() * 0.0003) * 0.12;
+    rotationGroup.rotation.x = manualPitch + (interactive ? 0 : Math.sin(Date.now() * 0.0003) * 0.12);
 
     renderer.render(scene, camera);
   }
