@@ -8,12 +8,15 @@
 <style>
   /* Seite-spezifische Styles */
   .grid {
-    max-width: 1100px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 40px 32px 80px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
+  }
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
   }
 
   .card {
