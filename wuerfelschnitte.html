@@ -674,33 +674,36 @@ function createCutViewer(container, cutName, opts = {}) {
     windowListeners.push([type, fn, opts]);
   };
 
-  // Beide Modi (Kachel und Modal) können per Drag gedreht werden.
-  // Klick-vs-Drag-Unterscheidung: kurzes Antippen löst Aktion aus
-  // (Modal: Explosion togglen; Kachel: onClick), Ziehen dreht den Würfel.
+  // Beide Modi können per Drag gedreht werden.
+  // Popup (interactive=true): Explosion wird SOFORT bei touchstart/mousedown
+  // ausgelöst, damit sich die Reaktion direkt anfühlt.
+  // Kachel (interactive=false): onClick wird erst beim Loslassen ausgelöst
+  // (nach Klick-vs-Drag-Check), damit das Modal nicht schon beim Scroll-Versuch öffnet.
   {
     let isPointerDown = false;
     let didDrag = false;
     let isTouch = false;
     let downX = 0, downY = 0;
     let prevX = 0, prevY = 0;
-    // Touch hat höhere Schwelle, damit leichtes Fingerzittern beim Tippen
-    // nicht als Drag fehlinterpretiert wird. Maus ist präziser.
     const DRAG_THRESHOLD_MOUSE = 5;
     const DRAG_THRESHOLD_TOUCH = 20;
     const getXY = (e) => ({
       x: e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0,
       y: e.clientY ?? e.touches?.[0]?.clientY ?? e.changedTouches?.[0]?.clientY ?? 0
     });
-    container.addEventListener('mousedown', (e) => {
-      isPointerDown = true; didDrag = false; isTouch = false;
+
+    const triggerDown = (e, touch) => {
+      isPointerDown = true; didDrag = false; isTouch = touch;
       const { x, y } = getXY(e);
       downX = prevX = x; downY = prevY = y;
-    });
-    container.addEventListener('touchstart', (e) => {
-      isPointerDown = true; didDrag = false; isTouch = true;
-      const { x, y } = getXY(e);
-      downX = prevX = x; downY = prevY = y;
-    }, { passive: true });
+      // Popup: Explosion sofort auslösen (direktes Feedback).
+      if (interactive) {
+        targetExploded = targetExploded > 0.5 ? 0 : 1;
+      }
+    };
+    container.addEventListener('mousedown', (e) => triggerDown(e, false));
+    container.addEventListener('touchstart', (e) => triggerDown(e, true), { passive: true });
+
     const onMove = (e) => {
       if (!isPointerDown) return;
       const { x, y } = getXY(e);
@@ -709,8 +712,6 @@ function createCutViewer(container, cutName, opts = {}) {
       const threshold = isTouch ? DRAG_THRESHOLD_TOUCH : DRAG_THRESHOLD_MOUSE;
       if (!didDrag && Math.hypot(dx, dy) > threshold) didDrag = true;
       if (didDrag) {
-        // Während aktivem Drag verhindern wir, dass die Seite mitscrollt.
-        // Nur möglich, weil der Listener non-passive registriert ist.
         if (e.cancelable) e.preventDefault();
         manualYawOffset += (x - prevX) * 0.01;
         manualPitch += (y - prevY) * 0.01;
@@ -719,17 +720,14 @@ function createCutViewer(container, cutName, opts = {}) {
       prevX = x; prevY = y;
     };
     const onUp = () => {
-      if (isPointerDown && !didDrag) {
-        if (interactive) {
-          targetExploded = targetExploded > 0.5 ? 0 : 1;
-        } else if (onClick) {
-          onClick();
-        }
+      // Nur im Kachel-Modus wird der Klick erst beim Loslassen ausgelöst;
+      // im Popup ist die Explosion bereits bei touchstart passiert.
+      if (isPointerDown && !didDrag && !interactive && onClick) {
+        onClick();
       }
       isPointerDown = false;
     };
     addWindowListener('mousemove', onMove);
-    // touchmove NICHT passive, damit preventDefault während Drag funktioniert
     addWindowListener('touchmove', onMove, { passive: false });
     addWindowListener('mouseup', onUp);
     addWindowListener('touchend', onUp);
