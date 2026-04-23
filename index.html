@@ -282,7 +282,6 @@ function createThumbnail(container, type) {
     // Teil 1: über der Diagonalen z > -x (ganz grob, aber wir nehmen einfach
     // 6 konkrete Vertices, die einen schräg geschnittenen Halbwürfel bilden)
     function makeHalfPrism(flip) {
-      const s = flip ? -1 : 1;
       // Würfel-Ecken, getrennt durch eine schräge Ebene
       const v = [
         [-S, -S, -S], [ S, -S, -S], [ S,  S, -S],
@@ -290,21 +289,22 @@ function createThumbnail(container, type) {
       ];
       if (flip) v.forEach(p => { p[0] *= -1; p[1] *= -1; p[2] *= -1; });
       // Faces (4 Dreiecke für Quader-Boden+Dach, 4 für die Seiten + Schnittfläche)
+      // Beim Flip drehen wir die Winding-Order der Dreiecke um, damit die
+      // Normalen weiterhin nach aussen zeigen (sonst wäre das Teil "hohl").
       const f = [
-        // Boden
-        [0,1,2],
-        // Dach
-        [3,5,4],
-        // Seite 1 (y=-S)
-        [0,3,4], [0,4,1],
-        // Seite 2 (x=S)
-        [1,4,5], [1,5,2],
-        // Schnittfläche (diagonale Fläche durch 0,2,5,3)
-        [0,2,5], [0,5,3]
+        [0,1,2],                  // Boden
+        [3,5,4],                  // Dach
+        [0,3,4], [0,4,1],         // Seite 1 (y=-S)
+        [1,4,5], [1,5,2],         // Seite 2 (x=S)
+        [0,2,5], [0,5,3]          // Schnittfläche (diagonal)
       ];
       const positions = [];
-      for (const [a,b,c] of f) {
-        positions.push(...v[a], ...v[b], ...v[c]);
+      for (const [a, b, c] of f) {
+        if (flip) {
+          positions.push(...v[a], ...v[c], ...v[b]); // Reihenfolge umdrehen
+        } else {
+          positions.push(...v[a], ...v[b], ...v[c]);
+        }
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -313,10 +313,10 @@ function createThumbnail(container, type) {
     }
 
     const mat1 = new THREE.MeshStandardMaterial({
-      color: 0x5a9a6c, metalness: 0.15, roughness: 0.45, envMapIntensity: 1.2, side: THREE.DoubleSide
+      color: 0x7dd3c0, metalness: 0.55, roughness: 0.28, envMapIntensity: 1.3, side: THREE.DoubleSide
     });
     const mat2 = new THREE.MeshStandardMaterial({
-      color: 0xb8c5cc, metalness: 0.25, roughness: 0.4, envMapIntensity: 1.2, side: THREE.DoubleSide
+      color: 0xf0f0f0, metalness: 0.1, roughness: 0.5, envMapIntensity: 1.3, side: THREE.DoubleSide
     });
 
     const geo1 = makeHalfPrism(false);
