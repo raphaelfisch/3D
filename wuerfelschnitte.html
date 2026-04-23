@@ -674,11 +674,9 @@ function createCutViewer(container, cutName, opts = {}) {
     windowListeners.push([type, fn, opts]);
   };
 
-  // Beide Modi können per Drag gedreht werden.
-  // Popup (interactive=true): Explosion wird SOFORT bei touchstart/mousedown
-  // ausgelöst, damit sich die Reaktion direkt anfühlt.
-  // Kachel (interactive=false): onClick wird erst beim Loslassen ausgelöst
-  // (nach Klick-vs-Drag-Check), damit das Modal nicht schon beim Scroll-Versuch öffnet.
+  // Beide Modi (Kachel und Modal) können per Drag gedreht werden.
+  // Klick-vs-Drag-Unterscheidung: kurzes Antippen löst Aktion aus
+  // (Modal: Explosion togglen; Kachel: onClick), Ziehen dreht den Würfel.
   {
     let isPointerDown = false;
     let didDrag = false;
@@ -691,19 +689,16 @@ function createCutViewer(container, cutName, opts = {}) {
       x: e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0,
       y: e.clientY ?? e.touches?.[0]?.clientY ?? e.changedTouches?.[0]?.clientY ?? 0
     });
-
-    const triggerDown = (e, touch) => {
-      isPointerDown = true; didDrag = false; isTouch = touch;
+    container.addEventListener('mousedown', (e) => {
+      isPointerDown = true; didDrag = false; isTouch = false;
       const { x, y } = getXY(e);
       downX = prevX = x; downY = prevY = y;
-      // Popup: Explosion sofort auslösen (direktes Feedback).
-      if (interactive) {
-        targetExploded = targetExploded > 0.5 ? 0 : 1;
-      }
-    };
-    container.addEventListener('mousedown', (e) => triggerDown(e, false));
-    container.addEventListener('touchstart', (e) => triggerDown(e, true), { passive: true });
-
+    });
+    container.addEventListener('touchstart', (e) => {
+      isPointerDown = true; didDrag = false; isTouch = true;
+      const { x, y } = getXY(e);
+      downX = prevX = x; downY = prevY = y;
+    }, { passive: true });
     const onMove = (e) => {
       if (!isPointerDown) return;
       const { x, y } = getXY(e);
@@ -720,10 +715,12 @@ function createCutViewer(container, cutName, opts = {}) {
       prevX = x; prevY = y;
     };
     const onUp = () => {
-      // Nur im Kachel-Modus wird der Klick erst beim Loslassen ausgelöst;
-      // im Popup ist die Explosion bereits bei touchstart passiert.
-      if (isPointerDown && !didDrag && !interactive && onClick) {
-        onClick();
+      if (isPointerDown && !didDrag) {
+        if (interactive) {
+          targetExploded = targetExploded > 0.5 ? 0 : 1;
+        } else if (onClick) {
+          onClick();
+        }
       }
       isPointerDown = false;
     };
