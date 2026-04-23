@@ -676,20 +676,24 @@ function createCutViewer(container, cutName, opts = {}) {
   {
     let isPointerDown = false;
     let didDrag = false;
+    let isTouch = false;
     let downX = 0, downY = 0;
     let prevX = 0, prevY = 0;
-    const DRAG_THRESHOLD = 5;
+    // Touch hat höhere Schwelle, damit leichtes Fingerzittern beim Tippen
+    // nicht als Drag fehlinterpretiert wird. Maus ist präziser.
+    const DRAG_THRESHOLD_MOUSE = 5;
+    const DRAG_THRESHOLD_TOUCH = 12;
     const getXY = (e) => ({
-      x: e.clientX ?? e.touches?.[0]?.clientX ?? 0,
-      y: e.clientY ?? e.touches?.[0]?.clientY ?? 0
+      x: e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0,
+      y: e.clientY ?? e.touches?.[0]?.clientY ?? e.changedTouches?.[0]?.clientY ?? 0
     });
     container.addEventListener('mousedown', (e) => {
-      isPointerDown = true; didDrag = false;
+      isPointerDown = true; didDrag = false; isTouch = false;
       const { x, y } = getXY(e);
       downX = prevX = x; downY = prevY = y;
     });
     container.addEventListener('touchstart', (e) => {
-      isPointerDown = true; didDrag = false;
+      isPointerDown = true; didDrag = false; isTouch = true;
       const { x, y } = getXY(e);
       downX = prevX = x; downY = prevY = y;
     }, { passive: true });
@@ -698,7 +702,8 @@ function createCutViewer(container, cutName, opts = {}) {
       const { x, y } = getXY(e);
       const dx = x - downX;
       const dy = y - downY;
-      if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) didDrag = true;
+      const threshold = isTouch ? DRAG_THRESHOLD_TOUCH : DRAG_THRESHOLD_MOUSE;
+      if (!didDrag && Math.hypot(dx, dy) > threshold) didDrag = true;
       if (didDrag) {
         manualYawOffset += (x - prevX) * 0.01;
         manualPitch += (y - prevY) * 0.01;
