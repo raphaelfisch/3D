@@ -3,22 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Würfelschnitte · 3D-Werkstatt</title>
+<title>Platonische Körper · 3D-Werkstatt</title>
 <link rel="stylesheet" href="shared.css">
-<script src="shared.js" defer></script>
 <style>
+  /* Back-Link mehr Abstand zum Hero bei dieser Seite */
+  body { padding-top: 0; }
+
   .grid {
     max-width: 1600px;
     margin: 0 auto;
     padding: 40px 32px 40px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
   }
-  @media (max-width: 1200px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 1400px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 900px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 640px)  { .grid { grid-template-columns: 1fr; padding: 24px 20px; gap: 16px; } }
 
-  .cut-card {
+  .solid-card {
     position: relative;
     background: var(--panel);
     backdrop-filter: blur(16px) saturate(140%);
@@ -30,104 +33,68 @@
     flex-direction: column;
   }
 
-  .cut-viewer {
+  .solid-viewer {
     aspect-ratio: 1 / 1;
     position: relative;
     background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
-    cursor: pointer;
+    cursor: grab;
     transition: background 0.3s;
   }
-  .cut-viewer canvas { width: 100%; height: 100%; display: block; }
+  .solid-viewer:active { cursor: grabbing; }
+  .solid-viewer canvas { width: 100%; height: 100%; display: block; }
 
-  .cut-label {
-    position: absolute;
-    top: 12px; left: 14px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: rgba(10, 13, 18, 0.5);
-    padding: 4px 10px;
-    border-radius: 100px;
-    pointer-events: none;
-    backdrop-filter: blur(8px);
+  .solid-body {
+    padding: 18px 18px 20px;
   }
-  body.light .cut-label {
-    background: rgba(255, 255, 255, 0.6);
-  }
-
-  .cut-body {
-    padding: 18px 20px 20px;
-  }
-  .cut-name {
-    font-size: 17px;
+  .solid-name {
+    font-size: 18px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
-  .cut-desc {
-    font-size: 12px;
+  .solid-alt {
+    font-size: 11px;
     color: var(--muted);
-    line-height: 1.5;
+    margin-bottom: 14px;
+    font-style: italic;
   }
 
-  /* Würfel-Modal (Grossansicht) */
-  .cube-modal-content {
-    position: relative;
-    width: min(90vw, 720px);
-    max-height: 90vh;
-    background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .stat {
+    background: rgba(125, 211, 192, 0.04);
     border: 1px solid var(--border);
-    border-radius: 24px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    transform: scale(0.96);
-    transition: transform 0.25s ease;
-  }
-  .modal-overlay.active .cube-modal-content { transform: scale(1); }
-
-  .cube-modal-viewer {
-    aspect-ratio: 1 / 1;
-    position: relative;
-    background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
-    cursor: pointer;
-  }
-  .cube-modal-viewer canvas { width: 100%; height: 100%; display: block; }
-
-  .cube-modal-info {
-    padding: 24px 28px 28px;
+    border-radius: 8px;
+    padding: 6px 2px;
     text-align: center;
   }
-  .cube-modal-info h2 {
-    font-size: 24px;
+  body.light .stat { background: rgba(125, 211, 192, 0.08); }
+  .stat-num {
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: -0.01em;
-    margin-bottom: 6px;
-  }
-  .cube-modal-info p {
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .cube-modal-info .click-hint {
-    display: inline-block;
-    margin-top: 14px;
-    padding: 6px 14px;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-border);
     color: var(--accent);
-    border-radius: 100px;
-    font-size: 12px;
-    font-weight: 600;
+    line-height: 1.2;
+  }
+  .stat-label {
+    font-size: 9px;
+    color: var(--muted);
     letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 2px;
   }
 
-  @media (max-width: 640px) {
-    .cube-modal-info { padding: 20px 22px 24px; }
-    .cube-modal-info h2 { font-size: 20px; }
+  .euler {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    padding: 6px 0 0;
+    font-family: 'Courier New', monospace;
   }
+  .euler strong { color: var(--text); font-weight: 600; }
 
   /* Info-Button (oben rechts, links neben Theme-Toggle) */
   .info-btn {
@@ -158,24 +125,7 @@
     .info-btn { top: 12px; right: 60px; width: 36px; height: 36px; }
   }
 
-  /* Info-Modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 7, 12, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    z-index: 100;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-  }
-  body.light .modal-overlay { background: rgba(240, 243, 247, 0.85); }
-  .modal-overlay.active { display: flex; opacity: 1; }
-
+  /* Info-Modal (Eulersche Formel etc.) – nutzt dieselbe .modal-overlay wie Körper-Modal */
   .info-modal-content {
     position: relative;
     width: min(90vw, 640px);
@@ -203,6 +153,89 @@
   }
   .info-modal-content p:last-child { margin-bottom: 0; }
   .info-modal-content strong { color: var(--text); font-weight: 600; }
+  .info-modal-content .formula {
+    display: inline-block;
+    font-family: 'Courier New', monospace;
+    background: var(--accent-dim);
+    color: var(--accent);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .info-modal-content { padding: 32px 24px 24px; }
+    .info-modal-content h2 { font-size: 22px; }
+  }
+
+  /* Modal für Grossansicht */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 7, 12, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  body.light .modal-overlay {
+    background: rgba(240, 243, 247, 0.85);
+  }
+  .modal-overlay.active { display: flex; opacity: 1; }
+
+  .modal-content {
+    position: relative;
+    width: min(90vw, 900px);
+    max-height: 90vh;
+    background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    transform: scale(0.96);
+    transition: transform 0.25s ease;
+  }
+  .modal-overlay.active .modal-content { transform: scale(1); }
+
+  .modal-viewer {
+    position: relative;
+    background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
+    cursor: grab;
+    min-height: 500px;
+  }
+  .modal-viewer:active { cursor: grabbing; }
+  .modal-viewer canvas { width: 100%; height: 100%; display: block; }
+
+  .modal-info {
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow-y: auto;
+  }
+  .modal-info h2 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .modal-info .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+  .modal-info .stats { gap: 10px; margin-bottom: 18px; }
+  .modal-info .stat { border-radius: 12px; padding: 14px 8px; }
+  .modal-info .stat-num { font-size: 28px; }
+  .modal-info .stat-label { font-size: 10px; margin-top: 4px; }
+  .modal-info .euler { font-size: 13px; padding: 14px 0 0; }
 
   .modal-close {
     position: absolute;
@@ -217,16 +250,31 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: border-color 0.2s;
+    z-index: 2;
+    transition: background 0.2s, border-color 0.2s;
   }
-  .modal-close:hover { border-color: var(--accent-border); }
+  .modal-close:hover {
+    border-color: var(--accent-border);
+  }
   .modal-close svg { width: 16px; height: 16px; }
 
+  @media (max-width: 720px) {
+    .modal-content {
+      grid-template-columns: 1fr;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-viewer { min-height: 320px; }
+    .modal-info { padding: 24px; }
+    .modal-info h2 { font-size: 26px; }
+  }
+
   @media (max-width: 640px) {
-    .info-modal-content { padding: 32px 24px 24px; }
-    .info-modal-content h2 { font-size: 22px; }
+    /* Mobile-spezifische Anpassungen für diese Seite kommen hier rein,
+       falls noch welche nötig sind */
   }
 </style>
+<script src="shared.js" defer></script>
 </head>
 <body>
 
@@ -238,7 +286,7 @@
   Werkstatt
 </a>
 
-<!-- Info-Button (oben rechts) -->
+<!-- Info-Button (oben links, neben Back-Link) -->
 <button class="info-btn" id="infoBtn" aria-label="Mehr Informationen">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="10"/>
@@ -259,50 +307,80 @@
 </button>
 
 <section class="hero compact">
-  <span class="eyebrow">Nach Max Bill</span>
-  <h1>Würfelschnitte</h1>
-  <p>Ein Würfel, auf vier verschiedene Arten geteilt – und jedes Mal entstehen zwei kongruente Teile.<br>Klicke auf einen Würfel, um ihn aufzutrennen.</p>
+  <span class="eyebrow">Regelmässige Körper</span>
+  <h1>Platonische Körper</h1>
+  <p>Die fünf regelmässigen Polyeder – zum Drehen, Vergleichen und Staunen.<br>Seit Platon bekannt, seit Euklid bewiesen, und es gibt genau diese fünf.</p>
 </section>
 
 <div class="grid" id="grid">
 
-  <div class="cut-card" data-cut="AC">
-    <div class="cut-viewer">
-      <span class="cut-label">A · C</span>
-    </div>
-    <div class="cut-body">
-      <div class="cut-name">Schnitt I</div>
-      <div class="cut-desc">Schnittfläche ist ein regelmässiges Sechseck.</div>
-    </div>
-  </div>
-
-  <div class="cut-card" data-cut="BD">
-    <div class="cut-viewer">
-      <span class="cut-label">B · D</span>
-    </div>
-    <div class="cut-body">
-      <div class="cut-name">Schnitt II</div>
-      <div class="cut-desc">Schnittfläche ist ein Rechteck.</div>
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="tetraeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Tetraeder</div>
+      <div class="solid-alt">4 Flächen aus gleichseitigen Dreiecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">4</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">4</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">6</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 4 + 4 − 6 = <strong>2</strong></div>
     </div>
   </div>
 
-  <div class="cut-card" data-cut="EG">
-    <div class="cut-viewer">
-      <span class="cut-label">E · G</span>
-    </div>
-    <div class="cut-body">
-      <div class="cut-name">Schnitt III</div>
-      <div class="cut-desc">Schnittfläche ist ein Quadrat.</div>
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="hexaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Hexaeder</div>
+      <div class="solid-alt">6 Flächen aus Quadraten</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">6</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">8</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 6 + 8 − 12 = <strong>2</strong></div>
     </div>
   </div>
 
-  <div class="cut-card" data-cut="FH">
-    <div class="cut-viewer">
-      <span class="cut-label">F · H</span>
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="oktaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Oktaeder</div>
+      <div class="solid-alt">8 Flächen aus gleichseitigen Dreiecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">8</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">6</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 8 + 6 − 12 = <strong>2</strong></div>
     </div>
-    <div class="cut-body">
-      <div class="cut-name">Schnitt IV</div>
-      <div class="cut-desc">Schnittfläche ist ein Rhombus.</div>
+  </div>
+
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="dodekaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Dodekaeder</div>
+      <div class="solid-alt">12 Flächen aus regelmässigen Fünfecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">20</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">30</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 12 + 20 − 30 = <strong>2</strong></div>
+    </div>
+  </div>
+
+  <div class="solid-card">
+    <div class="solid-viewer" data-solid="ikosaeder"></div>
+    <div class="solid-body">
+      <div class="solid-name">Ikosaeder</div>
+      <div class="solid-alt">20 Flächen aus gleichseitigen Dreiecken</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">20</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num">12</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num">30</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler">F + E − K = 20 + 12 − 30 = <strong>2</strong></div>
     </div>
   </div>
 
@@ -312,7 +390,29 @@
   © Raphael Fisch 2026
 </footer>
 
-<!-- Info-Modal -->
+<!-- Modal für Grossansicht -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose" aria-label="Schliessen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+    <div class="modal-viewer" id="modalViewer"></div>
+    <div class="modal-info">
+      <h2 id="modalTitle">Körper</h2>
+      <div class="subtitle" id="modalSubtitle">Beschreibung</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-num" id="modalFlaechen">-</div><div class="stat-label">Flächen</div></div>
+        <div class="stat"><div class="stat-num" id="modalEcken">-</div><div class="stat-label">Ecken</div></div>
+        <div class="stat"><div class="stat-num" id="modalKanten">-</div><div class="stat-label">Kanten</div></div>
+      </div>
+      <div class="euler" id="modalEuler">F + E − K = <strong>2</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- Info-Modal: Eulersche Polyederformel -->
 <div class="modal-overlay" id="infoModal">
   <div class="info-modal-content">
     <button class="modal-close" id="infoModalClose" aria-label="Schliessen">
@@ -320,29 +420,13 @@
         <path d="M18 6L6 18M6 6l12 12"/>
       </svg>
     </button>
-    <h2>Würfelschnitte nach Max Bill</h2>
-    <p>Max Bill (1908–1994), Schweizer Künstler und Architekt der Konkreten Kunst, zeigte, dass sich ein Würfel auf überraschend viele Arten in <strong>zwei deckungsgleiche</strong> Teile zerschneiden lässt.</p>
-    <p>Alle hier gezeigten Schnitte haben eine gemeinsame Eigenschaft: Die zwei Teile sind <strong>punktsymmetrisch zum Würfelmittelpunkt</strong>. Dreht man ein Teil durch den Mittelpunkt und stellt es wieder zusammen, passt es nahtlos als Gegenstück.</p>
-    <p>Vom einfachen Mittelschnitt bis zum treppenförmigen Schnitt – das Prinzip bleibt gleich, die Formen werden spielerischer. Ein Beispiel dafür, wie strenge Geometrie zu überraschenden Resultaten führt.</p>
+    <h2>Die Eulersche Polyederformel</h2>
+    <p>Bei allen fünf platonischen Körpern – und bei jedem konvexen Polyeder überhaupt – gilt: <span class="formula">F + E − K = 2</span></p>
+    <p>Wobei <strong>F</strong> die Anzahl Flächen, <strong>E</strong> die Anzahl Ecken und <strong>K</strong> die Anzahl Kanten ist. Entdeckt von Leonhard Euler im 18. Jahrhundert. Einfach nachzuprüfen – und trotzdem eines der elegantesten Ergebnisse der Geometrie.</p>
+    <p>Warum gibt es genau fünf? Weil an jeder Ecke mindestens drei Flächen zusammenstossen müssen und die Winkelsumme dort kleiner als 360° sein muss. Rechnet man das mit regelmässigen Vielecken durch, bleiben genau diese fünf Möglichkeiten übrig.</p>
   </div>
 </div>
 
-<!-- Würfel-Modal (Grossansicht einzelner Schnitt) -->
-<div class="modal-overlay" id="cubeModal">
-  <div class="cube-modal-content">
-    <button class="modal-close" id="cubeModalClose" aria-label="Schliessen">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 6L6 18M6 6l12 12"/>
-      </svg>
-    </button>
-    <div class="cube-modal-viewer" id="cubeModalViewer"></div>
-    <div class="cube-modal-info">
-      <h2 id="cubeModalTitle">Schnitt</h2>
-      <p id="cubeModalDesc">Beschreibung</p>
-      <span class="click-hint">Klick auf den Würfel → teilen / zusammen</span>
-    </div>
-  </div>
-</div>
 
 <script type="importmap">
 {
@@ -355,37 +439,41 @@
 
 <script type="module">
 import * as THREE from 'three';
-import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-const CUTS = {
-  AC: {
-    file: 'AC.stl',
-    label: 'A · C',
-    title: 'Schnitt I',
-    desc: 'Schnittfläche ist ein regelmässiges Sechseck.'
+const SOLIDS = {
+  tetraeder: {
+    name: 'Tetraeder',
+    subtitle: '4 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 4, kanten: 6, ecken: 4,
+    geometry: () => new THREE.TetrahedronGeometry(1.4)
   },
-  BD: {
-    file: 'BD.stl',
-    label: 'B · D',
-    title: 'Schnitt II',
-    desc: 'Schnittfläche ist ein Rechteck.'
+  hexaeder: {
+    name: 'Hexaeder',
+    subtitle: '6 Flächen aus Quadraten',
+    flaechen: 6, kanten: 12, ecken: 8,
+    geometry: () => new THREE.BoxGeometry(1.9, 1.9, 1.9)
   },
-  EG: {
-    file: 'EG.stl',
-    label: 'E · G',
-    title: 'Schnitt III',
-    desc: 'Schnittfläche ist ein Quadrat.'
+  oktaeder: {
+    name: 'Oktaeder',
+    subtitle: '8 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 8, kanten: 12, ecken: 6,
+    geometry: () => new THREE.OctahedronGeometry(1.4)
   },
-  FH: {
-    file: 'FH.stl',
-    label: 'F · H',
-    title: 'Schnitt IV',
-    desc: 'Schnittfläche ist ein Rhombus.'
+  dodekaeder: {
+    name: 'Dodekaeder',
+    subtitle: '12 Flächen aus regelmässigen Fünfecken',
+    flaechen: 12, kanten: 30, ecken: 20,
+    geometry: () => new THREE.DodecahedronGeometry(1.3)
+  },
+  ikosaeder: {
+    name: 'Ikosaeder',
+    subtitle: '20 Flächen aus gleichseitigen Dreiecken',
+    flaechen: 20, kanten: 30, ecken: 12,
+    geometry: () => new THREE.IcosahedronGeometry(1.3)
   }
 };
 
-// Shared environment
 let sharedEnvTexture = null;
 function getEnvironmentTexture(renderer) {
   if (!sharedEnvTexture) {
@@ -395,88 +483,14 @@ function getEnvironmentTexture(renderer) {
   return sharedEnvTexture;
 }
 
-// STL-Geometrien werden nur einmal geladen und wiederverwendet
-const loader = new STLLoader();
-const geometryCache = new Map();
-
-function loadGeometry(file) {
-  if (geometryCache.has(file)) return Promise.resolve(geometryCache.get(file));
-  return new Promise((resolve, reject) => {
-    loader.load(file, (geom) => {
-      // Normalen-Fix: manche STL-Exporter produzieren Dreiecke mit nach innen
-      // zeigender Normale (besonders an Schnittflächen). Wir orientieren alle
-      // Dreiecke so, dass ihre Normale vom Teil-Schwerpunkt weg zeigt.
-      fixTriangleOrientation(geom);
-      geom.computeVertexNormals();
-      geometryCache.set(file, geom);
-      resolve(geom);
-    }, undefined, reject);
-  });
-}
-
-// Für jedes Dreieck prüfen: Zeigt die Flächennormale vom Schwerpunkt weg?
-// Wenn nicht, Winding-Order umdrehen (Vertices 1 und 2 tauschen).
-function fixTriangleOrientation(geometry) {
-  const pos = geometry.attributes.position;
-  const arr = pos.array;
-  const triCount = pos.count / 3;
-
-  // Schwerpunkt des Teils approximieren (Mittelwert aller Vertices)
-  let cx = 0, cy = 0, cz = 0;
-  for (let i = 0; i < pos.count; i++) {
-    cx += pos.getX(i); cy += pos.getY(i); cz += pos.getZ(i);
-  }
-  cx /= pos.count; cy /= pos.count; cz /= pos.count;
-
-  const v0 = new THREE.Vector3(), v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
-  const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), n = new THREE.Vector3();
-  const centerToTri = new THREE.Vector3();
-  let flipped = 0;
-
-  for (let i = 0; i < triCount; i++) {
-    v0.fromBufferAttribute(pos, i*3);
-    v1.fromBufferAttribute(pos, i*3+1);
-    v2.fromBufferAttribute(pos, i*3+2);
-
-    e1.subVectors(v1, v0);
-    e2.subVectors(v2, v0);
-    n.crossVectors(e1, e2);
-
-    // Vektor vom Teil-Schwerpunkt zum Dreieck-Schwerpunkt
-    const tx = (v0.x + v1.x + v2.x) / 3 - cx;
-    const ty = (v0.y + v1.y + v2.y) / 3 - cy;
-    const tz = (v0.z + v1.z + v2.z) / 3 - cz;
-    centerToTri.set(tx, ty, tz);
-
-    // Wenn Normale nach innen zeigt (negatives Skalarprodukt mit centerToTri),
-    // Winding-Order umdrehen
-    if (n.dot(centerToTri) < 0) {
-      // Vertex 1 und Vertex 2 tauschen
-      const o1 = (i*3 + 1) * 3;
-      const o2 = (i*3 + 2) * 3;
-      for (let k = 0; k < 3; k++) {
-        const t = arr[o1+k]; arr[o1+k] = arr[o2+k]; arr[o2+k] = t;
-      }
-      flipped++;
-    }
-  }
-  pos.needsUpdate = true;
-}
-
-// Würfel-Mittelpunkt: (5, 5, 5), da die STLs in [0,0,0]..[10,10,10] liegen.
-// Die zwei Teile sind punktsymmetrisch zu diesem Punkt.
-const CUBE_CENTER = new THREE.Vector3(5, 5, 5);
-
-function createCutViewer(container, cutName, opts = {}) {
-  const { interactive = false, onClick = null, cameraDistance = 1 } = opts;
+function createViewer(container, solidName, opts = {}) {
+  const { onClick = null, cameraDistance = 1 } = opts;
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-  // Die STLs sind in Würfelkoordinaten [0..10], Kamera etwas weiter weg,
-  // damit auch der voll explodierte Würfel ins Bild passt.
-  const cd = cameraDistance;
-  camera.position.set(24*cd, 19*cd, 28*cd);
-  camera.lookAt(CUBE_CENTER);
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  const camScale = cameraDistance;
+  camera.position.set(3.5 * camScale, 2.5 * camScale, 4 * camScale);
+  camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -491,6 +505,7 @@ function createCutViewer(container, cutName, opts = {}) {
     camera.aspect = rect.width / rect.height;
     camera.updateProjectionMatrix();
   };
+
   container.appendChild(renderer.domElement);
   resize();
 
@@ -505,254 +520,90 @@ function createCutViewer(container, cutName, opts = {}) {
   const ambient = new THREE.AmbientLight(0xffffff, 0.35);
   scene.add(ambient);
 
-  // Materialien: Teil 1 in Türkis (wie platonische Körper), Teil 2 in Weiss.
-  // DoubleSide, damit auch Flächen mit nach-innen-zeigender Normale sichtbar
-  // sind (manche STL-Exporter wie SketchUp produzieren nicht immer konsistent
-  // nach aussen orientierte Dreiecke, besonders bei Schnittflächen).
-  const mat1 = new THREE.MeshStandardMaterial({
-    color: 0x5a9a6c, metalness: 0.55, roughness: 0.28, envMapIntensity: 1.3,
-    side: THREE.DoubleSide
-  });
-  const mat2 = new THREE.MeshStandardMaterial({
-    color: 0xf0f0f0, metalness: 0.1, roughness: 0.5, envMapIntensity: 1.3,
-    side: THREE.DoubleSide
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x5a9a6c,
+    metalness: 0.55,
+    roughness: 0.28,
+    envMapIntensity: 1.3
   });
 
-  // Rotationsgruppe, um den Gesamtwürfel dreht sich
-  const rotationGroup = new THREE.Group();
-  scene.add(rotationGroup);
+  const group = new THREE.Group();
+  scene.add(group);
 
-  // Zentrierende Gruppe: verschiebt den Würfel, sodass Mittelpunkt im Ursprung liegt
-  const centeredGroup = new THREE.Group();
-  centeredGroup.position.set(-5, -5, -5);
-  rotationGroup.add(centeredGroup);
+  const geo = SOLIDS[solidName].geometry();
+  const mesh = new THREE.Mesh(geo, material);
+  group.add(mesh);
 
-  // Container-Gruppen für die zwei Teile (wir animieren deren Position)
-  const part1Group = new THREE.Group();
-  const part2Group = new THREE.Group();
-  centeredGroup.add(part1Group);
-  centeredGroup.add(part2Group);
-
-  // Explosions-Bewegung ist in Richtung des Schwerpunkts des jeweiligen Teils
-  // (vom Würfelzentrum aus gesehen). Wird nach dem Laden gesetzt.
-  let explosionDir1 = new THREE.Vector3(1, 0, 0);
-  let explosionDir2 = new THREE.Vector3(-1, 0, 0);
-  const EXPLOSION_DIST = 8; // Einheiten – deutlich weiter für klare Trennung
-
-  // Edges-Overlay für klare Kanten
+  const edges = new THREE.EdgesGeometry(geo);
   const lineMat = new THREE.LineBasicMaterial({
     color: 0xffffff, transparent: true, opacity: 0.3
   });
+  group.add(new THREE.LineSegments(edges, lineMat));
+
+  // Edge-Farbe bei Hell-Theme anpassen (dunkle Linien auf hellem Grund)
   const applyThemeToLines = (theme) => {
     lineMat.color.set(theme === 'light' ? 0x1a2030 : 0xffffff);
-    lineMat.opacity = theme === 'light' ? 0.35 : 0.25;
+    lineMat.opacity = theme === 'light' ? 0.35 : 0.3;
   };
-  applyThemeToLines(window.WerkstattTheme?.get() || 'light');
+  applyThemeToLines(window.WerkstattTheme?.get() || 'dark');
   window.WerkstattTheme?.onChange(applyThemeToLines);
 
-  // Geometrie laden
-  loadGeometry(CUTS[cutName].file).then((geom) => {
-    // Teil 1: Original
-    const mesh1 = new THREE.Mesh(geom, mat1);
-    part1Group.add(mesh1);
-    const edges1 = new THREE.EdgesGeometry(geom, 20);
-    part1Group.add(new THREE.LineSegments(edges1, lineMat));
+  // Interaktion: Klick vs. Drag unterscheiden
+  let isPointerDown = false;
+  let didDrag = false;
+  let downX = 0, downY = 0;
+  let prevX = 0, prevY = 0;
+  let manualYawOffset = 0;
+  let manualPitch = 0;
+  const DRAG_THRESHOLD = 5;
 
-    // Teil 2: Punktspiegelung am Würfelmittelpunkt (5,5,5).
-    // Wir erzeugen eine gespiegelte Kopie der Geometrie mit korrekter
-    // Dreiecks-Orientierung (Winding-Order umdrehen, damit Normalen stimmen).
-    const mirroredGeom = mirrorGeometryAtPoint(geom, CUBE_CENTER);
-    const mesh2 = new THREE.Mesh(mirroredGeom, mat2);
-    part2Group.add(mesh2);
-    const edges2 = new THREE.EdgesGeometry(mirroredGeom, 20);
-    part2Group.add(new THREE.LineSegments(edges2, lineMat));
-
-    // Explosions-Richtung: senkrecht zur Schnittfläche (nicht Schwerpunkt-Richtung,
-    // weil diese bei schrägen Schnitten wie BD seitlich aneinander vorbei geht).
-    // Schnittfläche = nicht-achsenparallele Dreiecke des Teils.
-    const cutDir = findCutPlaneNormal(geom, CUBE_CENTER);
-    if (cutDir) {
-      // cutDir zeigt von Teil 1 aus nach aussen zum Gegenstück.
-      // Teil 1 soll sich aber in Gegenrichtung bewegen (weg vom Gegenstück).
-      explosionDir1.copy(cutDir).negate();
-      explosionDir2.copy(cutDir);
-    } else {
-      // Fallback für achsenparallele Schnitte (wie EG): Schwerpunkt-Richtung
-      geom.computeBoundingBox();
-      const center1 = geom.boundingBox.getCenter(new THREE.Vector3());
-      const dir1 = center1.clone().sub(CUBE_CENTER).normalize();
-      if (dir1.length() < 0.01) dir1.set(0, 1, 0);
-      explosionDir1.copy(dir1);
-      explosionDir2.copy(dir1).negate();
-    }
+  const getXY = (e) => ({
+    x: e.clientX ?? e.touches?.[0]?.clientX ?? 0,
+    y: e.clientY ?? e.touches?.[0]?.clientY ?? 0
   });
 
-  // Schnittflächen-Normale finden: Dreiecke mit nicht-achsenparalleler Normale
-  // gehören zur Schnittfläche. Deren gemittelte Normale ist die Schnittebenen-
-  // Normale, zeigt vom Teil-Schwerpunkt weg (zur anderen Hälfte hin).
-  function findCutPlaneNormal(geometry, cubeCenter) {
-    const pos = geometry.attributes.position;
-    const triCount = pos.count / 3;
-
-    // Teil-Schwerpunkt für die Orientierungs-Prüfung
-    let sx = 0, sy = 0, sz = 0;
-    for (let i = 0; i < pos.count; i++) {
-      sx += pos.getX(i); sy += pos.getY(i); sz += pos.getZ(i);
+  const onPointerDown = (e) => {
+    isPointerDown = true;
+    didDrag = false;
+    const { x, y } = getXY(e);
+    downX = prevX = x;
+    downY = prevY = y;
+  };
+  const onPointerMove = (e) => {
+    if (!isPointerDown) return;
+    const { x, y } = getXY(e);
+    const dx = x - downX;
+    const dy = y - downY;
+    if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) didDrag = true;
+    if (didDrag) {
+      manualYawOffset += (x - prevX) * 0.01;
+      manualPitch += (y - prevY) * 0.01;
+      manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
     }
-    sx /= pos.count; sy /= pos.count; sz /= pos.count;
-
-    const cutNormal = new THREE.Vector3();
-    let cutCount = 0;
-    const v0 = new THREE.Vector3(), v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
-    const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), n = new THREE.Vector3();
-
-    for (let i = 0; i < triCount; i++) {
-      v0.fromBufferAttribute(pos, i*3);
-      v1.fromBufferAttribute(pos, i*3+1);
-      v2.fromBufferAttribute(pos, i*3+2);
-      e1.subVectors(v1, v0);
-      e2.subVectors(v2, v0);
-      n.crossVectors(e1, e2).normalize();
-
-      // Ist die Normale achsenparallel? (zwei Komponenten nahe 0)
-      const eps = 0.02;
-      const zeros = (Math.abs(n.x) < eps ? 1 : 0) + (Math.abs(n.y) < eps ? 1 : 0) + (Math.abs(n.z) < eps ? 1 : 0);
-      if (zeros >= 2) continue; // achsenparallel → Würfel-Aussenfläche
-
-      // Schnittfläche gefunden. Normale nach aussen orientieren:
-      // Sie soll vom Teil-Schwerpunkt weg zeigen.
-      const tcx = (v0.x + v1.x + v2.x) / 3 - sx;
-      const tcy = (v0.y + v1.y + v2.y) / 3 - sy;
-      const tcz = (v0.z + v1.z + v2.z) / 3 - sz;
-      if (n.x*tcx + n.y*tcy + n.z*tcz < 0) n.negate();
-
-      cutNormal.add(n);
-      cutCount++;
-    }
-
-    if (cutCount === 0) return null; // Keine schräge Fläche gefunden
-    return cutNormal.divideScalar(cutCount).normalize();
-  }
-
-  // Hilfsfunktion: Geometrie am Punkt p punktspiegeln und Dreiecke korrekt orientieren
-  function mirrorGeometryAtPoint(sourceGeom, p) {
-    const g = sourceGeom.clone();
-    const pos = g.attributes.position;
-    // Vertices spiegeln: v' = 2*p - v
-    for (let i = 0; i < pos.count; i++) {
-      pos.setXYZ(i, 2*p.x - pos.getX(i), 2*p.y - pos.getY(i), 2*p.z - pos.getZ(i));
-    }
-    pos.needsUpdate = true;
-    // Dreiecks-Orientierung umdrehen (Vertices 1 und 2 tauschen pro Triangle)
-    // Bei nicht-indizierter Geometrie einfach jedes Dreieck neu anordnen.
-    const arr = pos.array;
-    for (let i = 0; i < pos.count; i += 3) {
-      // Tausche Vertex 1 (i+1) und Vertex 2 (i+2)
-      const o1 = (i+1) * 3;
-      const o2 = (i+2) * 3;
-      for (let k = 0; k < 3; k++) {
-        const t = arr[o1+k]; arr[o1+k] = arr[o2+k]; arr[o2+k] = t;
-      }
-    }
-    g.computeVertexNormals();
-    return g;
-  }
-
-  // Animations-State
-  let exploded = 0;       // aktuelle Position (0 = zusammen, 1 = auseinander)
-  let targetExploded = 0; // Zielwert
-  let manualYawOffset = interactive ? -0.4 : 0; // leicht schräger Start im Modal
-  let manualPitch = interactive ? -0.3 : 0;
-
-  // Event-Handler werden hier gesammelt, damit dispose() sie entfernen kann
-  const windowListeners = [];
-  const addWindowListener = (type, fn, opts) => {
-    window.addEventListener(type, fn, opts);
-    windowListeners.push([type, fn, opts]);
+    prevX = x;
+    prevY = y;
+  };
+  const onPointerUp = () => {
+    if (isPointerDown && !didDrag && onClick) onClick();
+    isPointerDown = false;
   };
 
-  // Beide Modi (Kachel und Modal) können per Drag gedreht werden.
-  // Klick-vs-Drag-Unterscheidung: kurzes Antippen löst Aktion aus
-  // (Modal: Explosion togglen; Kachel: onClick), Ziehen dreht den Würfel.
-  {
-    let isPointerDown = false;
-    let didDrag = false;
-    let downX = 0, downY = 0;
-    let prevX = 0, prevY = 0;
-    const DRAG_THRESHOLD = 5;
-    const getXY = (e) => ({
-      x: e.clientX ?? e.touches?.[0]?.clientX ?? 0,
-      y: e.clientY ?? e.touches?.[0]?.clientY ?? 0
-    });
-    container.addEventListener('mousedown', (e) => {
-      isPointerDown = true; didDrag = false;
-      const { x, y } = getXY(e);
-      downX = prevX = x; downY = prevY = y;
-    });
-    container.addEventListener('touchstart', (e) => {
-      isPointerDown = true; didDrag = false;
-      const { x, y } = getXY(e);
-      downX = prevX = x; downY = prevY = y;
-    }, { passive: true });
-    const onMove = (e) => {
-      if (!isPointerDown) return;
-      const { x, y } = getXY(e);
-      const dx = x - downX;
-      const dy = y - downY;
-      if (!didDrag && Math.hypot(dx, dy) > DRAG_THRESHOLD) didDrag = true;
-      if (didDrag) {
-        manualYawOffset += (x - prevX) * 0.01;
-        manualPitch += (y - prevY) * 0.01;
-        manualPitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, manualPitch));
-      }
-      prevX = x; prevY = y;
-    };
-    const onUp = () => {
-      if (isPointerDown && !didDrag) {
-        if (interactive) {
-          targetExploded = targetExploded > 0.5 ? 0 : 1;
-        } else if (onClick) {
-          onClick();
-        }
-      }
-      isPointerDown = false;
-    };
-    addWindowListener('mousemove', onMove);
-    addWindowListener('touchmove', onMove, { passive: true });
-    addWindowListener('mouseup', onUp);
-    addWindowListener('touchend', onUp);
-  }
+  container.addEventListener('mousedown', onPointerDown);
+  container.addEventListener('touchstart', onPointerDown, { passive: true });
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('touchmove', onPointerMove, { passive: true });
+  window.addEventListener('mouseup', onPointerUp);
+  window.addEventListener('touchend', onPointerUp);
 
   let autoYaw = 0;
   let running = true;
+
   function animate() {
     if (!running) return;
     requestAnimationFrame(animate);
-
-    if (interactive) {
-      // Sanfte Interpolation zum Ziel-Explosionsgrad
-      exploded += (targetExploded - exploded) * 0.12;
-    } else {
-      // Auto-Mode: pulsieren zwischen 0 und 1
-      const t = Date.now() * 0.0008;
-      const raw = (Math.sin(t) + 1) / 2;
-      const ease = raw < 0.5 ? 2*raw*raw : 1 - Math.pow(-2*raw+2, 2)/2;
-      exploded = ease;
-    }
-
-    // Teile verschieben
-    part1Group.position.copy(explosionDir1).multiplyScalar(exploded * EXPLOSION_DIST);
-    part2Group.position.copy(explosionDir2).multiplyScalar(exploded * EXPLOSION_DIST);
-
-    // Rotation: Im Kachel-Modus läuft die Auto-Rotation, im Modal-Modus
-    // nicht (sonst wäre es schwer, eine Position zum Betrachten zu halten).
-    // Manuelle Drag-Rotation wird in beiden Modi überlagert.
-    if (!interactive) {
-      autoYaw += 0.004;
-    }
-    rotationGroup.rotation.y = autoYaw + manualYawOffset;
-    rotationGroup.rotation.x = manualPitch + (interactive ? 0 : Math.sin(Date.now() * 0.0003) * 0.12);
-
+    autoYaw += 0.005;
+    group.rotation.y = autoYaw + manualYawOffset;
+    group.rotation.x = manualPitch + Math.sin(Date.now() * 0.0003) * 0.15;
     renderer.render(scene, camera);
   }
   animate();
@@ -764,9 +615,16 @@ function createCutViewer(container, cutName, opts = {}) {
     dispose() {
       running = false;
       resizeObs.disconnect();
-      for (const [type, fn, opts] of windowListeners) {
-        window.removeEventListener(type, fn, opts);
-      }
+      container.removeEventListener('mousedown', onPointerDown);
+      container.removeEventListener('touchstart', onPointerDown);
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchend', onPointerUp);
+      geo.dispose();
+      edges.dispose();
+      material.dispose();
+      lineMat.dispose();
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -775,51 +633,45 @@ function createCutViewer(container, cutName, opts = {}) {
   };
 }
 
-// Alle vier Karten initialisieren
-document.querySelectorAll('[data-cut]').forEach(card => {
-  const viewer = card.querySelector('.cut-viewer');
-  const cutName = card.dataset.cut;
-  createCutViewer(viewer, cutName, {
-    interactive: false,
-    onClick: () => openCubeModal(cutName)
-  });
-});
+// Modal-Logik
+const modal = document.getElementById('modal');
+const modalClose = document.getElementById('modalClose');
+const modalViewer = document.getElementById('modalViewer');
+let modalViewerInstance = null;
 
-// Würfel-Modal
-const cubeModal = document.getElementById('cubeModal');
-const cubeModalClose = document.getElementById('cubeModalClose');
-const cubeModalViewer = document.getElementById('cubeModalViewer');
-let cubeViewerInstance = null;
+function openModal(solidName) {
+  const data = SOLIDS[solidName];
+  document.getElementById('modalTitle').textContent = data.name;
+  document.getElementById('modalSubtitle').textContent = data.subtitle;
+  document.getElementById('modalFlaechen').textContent = data.flaechen;
+  document.getElementById('modalKanten').textContent = data.kanten;
+  document.getElementById('modalEcken').textContent = data.ecken;
+  document.getElementById('modalEuler').innerHTML =
+    `F + E − K = ${data.flaechen} + ${data.ecken} − ${data.kanten} = <strong>2</strong>`;
 
-function openCubeModal(cutName) {
-  const data = CUTS[cutName];
-  document.getElementById('cubeModalTitle').textContent = data.title + ' · ' + data.label;
-  document.getElementById('cubeModalDesc').textContent = data.desc;
-  cubeModal.classList.add('active');
+  modal.classList.add('active');
   document.body.style.overflow = 'hidden';
+
   requestAnimationFrame(() => {
-    cubeViewerInstance = createCutViewer(cubeModalViewer, cutName, {
-      interactive: true,
-      cameraDistance: 1.05
-    });
+    modalViewerInstance = createViewer(modalViewer, solidName, { cameraDistance: 1.1 });
   });
 }
 
-function closeCubeModal() {
-  cubeModal.classList.remove('active');
+function closeModal() {
+  modal.classList.remove('active');
   document.body.style.overflow = '';
-  if (cubeViewerInstance) {
-    cubeViewerInstance.dispose();
-    cubeViewerInstance = null;
+  if (modalViewerInstance) {
+    modalViewerInstance.dispose();
+    modalViewerInstance = null;
   }
 }
 
-cubeModalClose.addEventListener('click', closeCubeModal);
-cubeModal.addEventListener('click', (e) => {
-  if (e.target === cubeModal) closeCubeModal();
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
 });
 
-// Info-Modal
+// Info-Modal (Eulersche Polyederformel)
 const infoBtn = document.getElementById('infoBtn');
 const infoModal = document.getElementById('infoModal');
 const infoModalClose = document.getElementById('infoModalClose');
@@ -832,15 +684,22 @@ function closeInfoModal() {
   infoModal.classList.remove('active');
   document.body.style.overflow = '';
 }
+
 infoBtn.addEventListener('click', openInfoModal);
 infoModalClose.addEventListener('click', closeInfoModal);
 infoModal.addEventListener('click', (e) => {
   if (e.target === infoModal) closeInfoModal();
 });
+
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (cubeModal.classList.contains('active')) closeCubeModal();
+  if (modal.classList.contains('active')) closeModal();
   else if (infoModal.classList.contains('active')) closeInfoModal();
+});
+
+document.querySelectorAll('[data-solid]').forEach(el => {
+  const name = el.dataset.solid;
+  createViewer(el, name, { onClick: () => openModal(name) });
 });
 </script>
 
