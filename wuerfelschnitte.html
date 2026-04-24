@@ -726,16 +726,25 @@ function createCutViewer(container, cutName, opts = {}) {
     let prevX = 0, prevY = 0;
     const DRAG_THRESHOLD_MOUSE = 5;
     const DRAG_THRESHOLD_TOUCH = 20;
+    // Zeitstempel des letzten Touch-Events. Browser feuern nach Touch
+    // automatisch mouse/click-Events nach; diese ignorieren wir, um
+    // doppelte Auslösung zu verhindern.
+    let lastTouchEventTime = 0;
+    const TOUCH_SUPPRESS_MS = 500;
+    const isSyntheticMouse = () => (Date.now() - lastTouchEventTime) < TOUCH_SUPPRESS_MS;
+
     const getXY = (e) => ({
       x: e.clientX ?? e.touches?.[0]?.clientX ?? e.changedTouches?.[0]?.clientX ?? 0,
       y: e.clientY ?? e.touches?.[0]?.clientY ?? e.changedTouches?.[0]?.clientY ?? 0
     });
     container.addEventListener('mousedown', (e) => {
+      if (isSyntheticMouse()) return; // synthetic nach Touch ignorieren
       isPointerDown = true; didDrag = false; isTouch = false;
       const { x, y } = getXY(e);
       downX = prevX = x; downY = prevY = y;
     });
     container.addEventListener('touchstart', (e) => {
+      lastTouchEventTime = Date.now();
       isPointerDown = true; didDrag = false; isTouch = true;
       const { x, y } = getXY(e);
       downX = prevX = x; downY = prevY = y;
@@ -758,21 +767,32 @@ function createCutViewer(container, cutName, opts = {}) {
     const onUp = () => {
       if (isPointerDown && !didDrag) {
         if (interactive) {
-          // Auf Touch: Tap-Auslösung deaktivieren, weil es den "Teilen"-Button gibt.
-          // Auf Desktop: Klick auf Würfel togglet die Explosion wie gewohnt.
-          if (!isTouch) {
-            targetExploded = targetExploded > 0.5 ? 0 : 1;
-          }
+          // Klick auf den Würfel im Popup togglet die Explosion – auf allen
+          // Geräten. Auf Touch gibt es zusätzlich den "Teilen"-Button, aber
+          // beide Interaktionen funktionieren parallel.
+          targetExploded = targetExploded > 0.5 ? 0 : 1;
         } else if (onClick) {
           onClick();
         }
       }
       isPointerDown = false;
     };
-    addWindowListener('mousemove', onMove);
+    const touchEndHandler = () => {
+      lastTouchEventTime = Date.now();
+      onUp();
+    };
+    const mouseUpHandler = () => {
+      if (isSyntheticMouse()) return;
+      onUp();
+    };
+    const mouseMoveHandler = (e) => {
+      if (isSyntheticMouse()) return;
+      onMove(e);
+    };
+    addWindowListener('mousemove', mouseMoveHandler);
     addWindowListener('touchmove', onMove, { passive: false });
-    addWindowListener('mouseup', onUp);
-    addWindowListener('touchend', onUp);
+    addWindowListener('mouseup', mouseUpHandler);
+    addWindowListener('touchend', touchEndHandler);
   }
 
   let running = true;
