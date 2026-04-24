@@ -76,11 +76,8 @@
   /* Würfel-Modal (Grossansicht) */
   .cube-modal-content {
     position: relative;
-    /* Breite: so gross wie nötig, aber das Modal soll ungefähr quadratisch
-       bleiben. Wir nehmen die kleinere von verfügbarer Breite und Höhe,
-       damit das Modal immer in den Bildschirm passt. */
-    width: min(90vw, 90vh, 720px);
-    max-height: 90vh;
+    width: min(95vw, 900px);
+    height: min(95vh, 900px);
     background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     border: 1px solid var(--border);
     border-radius: 24px;
@@ -93,8 +90,7 @@
   .modal-overlay.active .cube-modal-content { transform: scale(1); }
 
   .cube-modal-viewer {
-    /* Viewer füllt den restlichen Platz nach dem Info-Bereich.
-       aspect-ratio wird nur angewendet, wenn genug Höhe da ist. */
+    /* Viewer füllt den kompletten Platz über dem Info-Bereich */
     flex: 1 1 auto;
     min-height: 0;
     position: relative;
