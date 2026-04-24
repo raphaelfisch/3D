@@ -190,14 +190,14 @@
 
   .modal-content {
     position: relative;
-    width: min(90vw, 900px);
-    max-height: 90vh;
+    width: min(95vw, 1200px);
+    height: min(95vh, 800px);
     background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     border: 1px solid var(--border);
     border-radius: 24px;
     overflow: hidden;
     display: grid;
-    grid-template-columns: 1.3fr 1fr;
+    grid-template-columns: 1.4fr 1fr;
     transform: scale(0.96);
     transition: transform 0.25s ease;
   }
@@ -207,7 +207,9 @@
     position: relative;
     background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     cursor: grab;
-    min-height: 500px;
+    min-width: 0;
+    min-height: 0;
+    touch-action: none;
   }
   .modal-viewer:active { cursor: grabbing; }
   .modal-viewer canvas { width: 100%; height: 100%; display: block; }
@@ -217,7 +219,8 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    overflow-y: auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .modal-info h2 {
     font-size: 32px;
@@ -261,12 +264,34 @@
   @media (max-width: 720px) {
     .modal-content {
       grid-template-columns: 1fr;
-      max-height: 90vh;
-      overflow-y: auto;
+      grid-template-rows: 1fr auto;
+      width: 95vw;
+      height: 95vh;
     }
-    .modal-viewer { min-height: 320px; }
-    .modal-info { padding: 24px; }
-    .modal-info h2 { font-size: 26px; }
+    .modal-viewer { min-height: 0; }
+    .modal-info {
+      padding: 18px 22px 22px;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+    .modal-info h2 { font-size: 22px; margin-bottom: 2px; }
+    .modal-info .subtitle { font-size: 12px; margin-bottom: 12px; }
+    .modal-info .stats { gap: 8px; margin-bottom: 10px; }
+    .modal-info .stat { padding: 10px 6px; }
+    .modal-info .stat-num { font-size: 22px; }
+    .modal-info .stat-label { font-size: 9px; margin-top: 2px; }
+    .modal-info .euler { font-size: 11px; padding: 8px 0 0; }
+  }
+  /* Sehr niedrige Bildschirme (z.B. Handy quer): Info noch kompakter */
+  @media (max-height: 500px) {
+    .modal-info { padding: 10px 16px 12px; }
+    .modal-info h2 { font-size: 16px; margin-bottom: 0; }
+    .modal-info .subtitle { font-size: 10px; margin-bottom: 6px; }
+    .modal-info .stats { gap: 4px; margin-bottom: 4px; }
+    .modal-info .stat { padding: 4px 4px; }
+    .modal-info .stat-num { font-size: 15px; }
+    .modal-info .stat-label { font-size: 8px; margin-top: 0; }
+    .modal-info .euler { font-size: 10px; padding: 4px 0 0; }
   }
 
   @media (max-width: 640px) {
