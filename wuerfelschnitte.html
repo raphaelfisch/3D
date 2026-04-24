@@ -121,22 +121,10 @@
     font-size: 14px;
     line-height: 1.5;
   }
-  .cube-modal-info .click-hint {
-    display: inline-block;
-    margin-top: 14px;
-    padding: 6px 14px;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-border);
-    color: var(--accent);
-    border-radius: 100px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-  }
 
-  /* Button für Touch-Geräte (Handy/Tablet), zum Auslösen der Explosion */
+  /* Button zum Auslösen der Explosion (auf allen Geräten) */
   .explode-btn {
-    display: none; /* standardmäßig versteckt (Desktop) */
+    display: inline-block;
     margin-top: 14px;
     padding: 12px 28px;
     background: var(--accent-dim);
@@ -148,16 +136,13 @@
     letter-spacing: 0.03em;
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.2s, transform 0.1s;
+    transition: background 0.2s, transform 0.1s, border-color 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
-  .explode-btn:active { transform: scale(0.96); }
-
-  /* Auf Touch-Geräten: Button statt Klick-Hinweis */
-  @media (hover: none) and (pointer: coarse) {
-    .desktop-only { display: none !important; }
-    .explode-btn { display: inline-block; }
+  .explode-btn:hover {
+    border-color: var(--accent);
   }
+  .explode-btn:active { transform: scale(0.96); }
 
   @media (max-width: 640px) {
     .cube-modal-info { padding: 16px 20px 20px; }
@@ -168,7 +153,7 @@
     .cube-modal-info { padding: 10px 20px 14px; }
     .cube-modal-info h2 { font-size: 17px; margin-bottom: 2px; }
     .cube-modal-info p { font-size: 12px; }
-    .cube-modal-info .click-hint { margin-top: 6px; padding: 4px 10px; font-size: 11px; }
+    .cube-modal-info .explode-btn { margin-top: 8px; padding: 8px 18px; font-size: 12px; }
   }
 
   /* Info-Button (oben rechts, links neben Theme-Toggle) */
@@ -380,8 +365,7 @@
     <div class="cube-modal-info">
       <h2 id="cubeModalTitle">Schnitt</h2>
       <p id="cubeModalDesc">Beschreibung</p>
-      <span class="click-hint desktop-only">Klick auf den Würfel → teilen / zusammen</span>
-      <button class="explode-btn touch-only" id="explodeBtn" type="button">Teilen</button>
+      <button class="explode-btn" id="explodeBtn" type="button">Teilen</button>
     </div>
   </div>
 </div>
