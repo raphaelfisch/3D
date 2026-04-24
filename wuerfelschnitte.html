@@ -76,7 +76,10 @@
   /* Würfel-Modal (Grossansicht) */
   .cube-modal-content {
     position: relative;
-    width: min(90vw, 720px);
+    /* Breite: so gross wie nötig, aber das Modal soll ungefähr quadratisch
+       bleiben. Wir nehmen die kleinere von verfügbarer Breite und Höhe,
+       damit das Modal immer in den Bildschirm passt. */
+    width: min(90vw, 90vh, 720px);
     max-height: 90vh;
     background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     border: 1px solid var(--border);
@@ -90,7 +93,10 @@
   .modal-overlay.active .cube-modal-content { transform: scale(1); }
 
   .cube-modal-viewer {
-    aspect-ratio: 1 / 1;
+    /* Viewer füllt den restlichen Platz nach dem Info-Bereich.
+       aspect-ratio wird nur angewendet, wenn genug Höhe da ist. */
+    flex: 1 1 auto;
+    min-height: 0;
     position: relative;
     background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     cursor: pointer;
@@ -99,7 +105,8 @@
   .cube-modal-viewer canvas { width: 100%; height: 100%; display: block; }
 
   .cube-modal-info {
-    padding: 24px 28px 28px;
+    flex: 0 0 auto;
+    padding: 20px 28px 24px;
     text-align: center;
   }
   .cube-modal-info h2 {
@@ -127,8 +134,15 @@
   }
 
   @media (max-width: 640px) {
-    .cube-modal-info { padding: 20px 22px 24px; }
+    .cube-modal-info { padding: 16px 20px 20px; }
     .cube-modal-info h2 { font-size: 20px; }
+  }
+  /* Niedrige Bildschirme (z.B. Handy quer): Info maximal kompakt */
+  @media (max-height: 500px) {
+    .cube-modal-info { padding: 10px 20px 14px; }
+    .cube-modal-info h2 { font-size: 17px; margin-bottom: 2px; }
+    .cube-modal-info p { font-size: 12px; }
+    .cube-modal-info .click-hint { margin-top: 6px; padding: 4px 10px; font-size: 11px; }
   }
 
   /* Info-Button (oben rechts, links neben Theme-Toggle) */
