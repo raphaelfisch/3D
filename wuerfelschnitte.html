@@ -73,11 +73,14 @@
     line-height: 1.5;
   }
 
-  /* Würfel-Modal (Grossansicht) */
+  /* Würfel-Modal (Grossansicht)
+     Strategie: Viewer soll ungefähr quadratisch sein. Das Modal wird daher
+     so dimensioniert, dass die Breite passt und die Gesamthöhe = Breite +
+     Info-Bereich (als max-height, damit's bei niedrigen Screens schrumpft). */
   .cube-modal-content {
     position: relative;
-    width: min(95vw, 900px);
-    height: min(95vh, 900px);
+    width: min(95vw, 95vh, 720px);
+    max-height: 95vh;
     background: linear-gradient(180deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
     border: 1px solid var(--border);
     border-radius: 24px;
@@ -90,8 +93,10 @@
   .modal-overlay.active .cube-modal-content { transform: scale(1); }
 
   .cube-modal-viewer {
-    /* Viewer füllt den kompletten Platz über dem Info-Bereich */
+    /* Viewer versucht quadratisch zu sein. Falls Info-Bereich den Platz
+       einschränkt, schrumpft der Viewer (min-height: 0 erlaubt das). */
     flex: 1 1 auto;
+    aspect-ratio: 1 / 1;
     min-height: 0;
     position: relative;
     background: linear-gradient(135deg, var(--card-grad-start) 0%, var(--card-grad-end) 100%);
@@ -102,7 +107,7 @@
 
   .cube-modal-info {
     flex: 0 0 auto;
-    padding: 20px 28px 24px;
+    padding: 16px 24px 20px;
     text-align: center;
   }
   .cube-modal-info h2 {
@@ -753,7 +758,11 @@ function createCutViewer(container, cutName, opts = {}) {
     const onUp = () => {
       if (isPointerDown && !didDrag) {
         if (interactive) {
-          targetExploded = targetExploded > 0.5 ? 0 : 1;
+          // Auf Touch: Tap-Auslösung deaktivieren, weil es den "Teilen"-Button gibt.
+          // Auf Desktop: Klick auf Würfel togglet die Explosion wie gewohnt.
+          if (!isTouch) {
+            targetExploded = targetExploded > 0.5 ? 0 : 1;
+          }
         } else if (onClick) {
           onClick();
         }
