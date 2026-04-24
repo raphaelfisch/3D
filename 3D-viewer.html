@@ -22,7 +22,7 @@
   /* Floating Action Buttons */
   .fab {
     position: fixed;
-    width: 44px; height: 44px;
+    width: 40px; height: 40px;
     background: var(--panel);
     backdrop-filter: blur(16px) saturate(140%);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
@@ -46,8 +46,8 @@
     pointer-events: none;
   }
 
-  #settings-toggle { top: 16px; right: 122px; }
-  #reset-view      { top: 16px; right: 69px; }
+  #settings-toggle { top: 16px; right: 116px; }
+  #reset-view      { top: 16px; right: 66px; }
 
   .overlay-bg {
     position: fixed; inset: 0;
@@ -355,15 +355,9 @@
 
   /* ============ MOBILE ============ */
   @media (max-width: 700px) {
-    /* Alle drei Top-Right-Buttons auf gleicher Höhe und Grösse.
-       Wichtig: überschreibt auch den 640px-Breakpoint aus shared.css. */
-    #settings-toggle, #reset-view, .theme-toggle {
-      top: 12px !important;
-      width: 40px !important;
-      height: 40px !important;
-    }
-    .theme-toggle { right: 12px !important; }
-    #reset-view { right: 60px; }
+    /* Alle drei Top-Right-Buttons rücken ein Stück näher an den Rand */
+    #settings-toggle, #reset-view { top: 12px; }
+    #reset-view      { right: 60px; }
     #settings-toggle { right: 108px; }
 
     #settings-panel {
