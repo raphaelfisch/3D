@@ -264,13 +264,17 @@
   @media (max-width: 720px) {
     .modal-content {
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
-      width: 95vw;
-      height: 95vh;
+      grid-template-rows: auto auto;
+      width: min(95vw, 95vh);
+      height: auto;
+      max-height: 95vh;
     }
-    .modal-viewer { min-height: 0; }
+    .modal-viewer {
+      aspect-ratio: 1 / 1;
+      min-height: 0;
+    }
     .modal-info {
-      padding: 18px 22px 22px;
+      padding: 16px 22px 20px;
       justify-content: flex-start;
       overflow: hidden;
     }
