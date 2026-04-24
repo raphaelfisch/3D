@@ -206,13 +206,13 @@ function createThumbnail(container, type) {
   const pmremGenerator = new THREE.PMREMGenerator(renderer);
   scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-  const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.5);
+  const keyLight = new THREE.DirectionalLight(0xfff4e0, 1.4);
   keyLight.position.set(3, 5, 3);
   scene.add(keyLight);
-  const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.5);
+  const fillLight = new THREE.DirectionalLight(0x7dd3c0, 0.4);
   fillLight.position.set(-3, 2, -2);
   scene.add(fillLight);
-  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.35);
   scene.add(ambient);
 
   const material = new THREE.MeshStandardMaterial({
