@@ -131,10 +131,12 @@ body.resizing *, body.resizing *::before, body.resizing *::after {
 .back-link {
   position: fixed;
   top: 16px; left: 16px;
+  height: 40px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 0 14px;
   color: var(--text);
   text-decoration: none;
   font-size: 13px;
@@ -163,7 +165,7 @@ body.resizing *, body.resizing *::before, body.resizing *::after {
 .theme-toggle {
   position: fixed;
   top: 16px; right: 16px;
-  width: 44px; height: 44px;
+  width: 40px; height: 40px;
   background: var(--panel);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
@@ -218,6 +220,6 @@ body.light .theme-toggle .icon-moon { display: none; }
   .hero.compact { padding: 56px 20px 16px; }
   .hero.compact h1 { font-size: 34px; }
 
-  .back-link { top: 12px; left: 12px; padding: 10px 14px; font-size: 12px; height: 40px; }
+  .back-link { top: 12px; left: 12px; padding: 0 14px; font-size: 12px; }
   .theme-toggle { top: 12px; right: 12px; width: 40px; height: 40px; }
 }
